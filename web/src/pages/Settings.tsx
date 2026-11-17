@@ -14,7 +14,7 @@ import {
 import s from "../ui.module.scss";
 import { Select } from "../fields";
 import { AccountPanel } from "./Account";
-import { t } from "../i18n";
+import { t, currentLanguage } from "../i18n";
 type Setting = {
   key: string;
   value: unknown;
@@ -45,16 +45,29 @@ const modeLabels: Record<string, string> = {
   readonly: "只读",
 };
 
+function getSettingLabel(item: Setting): string {
+  if (currentLanguage() === "en") {
+    const k = "settings.schema." + item.key;
+    const tr = t(k);
+    if (tr !== k) return tr;
+    return item.key.replaceAll("_", " ");
+  }
+  return item.label || t("settings.schema." + item.key);
+}
+
 function getSourceLabel(src: string): string {
   const k = "settings.source." + src;
   const tr = t(k);
-  return tr !== k ? tr : (sourceLabels[src] ?? src);
+  if (tr !== k) return tr;
+  if (currentLanguage() === "en") return src.replaceAll("_", " ");
+  return sourceLabels[src] ?? src;
 }
 function getModeLabel(mode: string): string {
   if (mode === "hot") return t("settings.apply.hot");
   if (mode === "restart") return t("settings.apply.restart");
   if (mode === "startup") return t("settings.mode.startup");
   if (mode === "readonly") return t("settings.mode.readonly");
+  if (currentLanguage() === "en") return mode.replaceAll("_", " ");
   return modeLabels[mode] ?? mode;
 }
 
@@ -72,7 +85,7 @@ function normalize(value: unknown): {
   session: RecordValue;
 } {
   const d = object(value);
-  if (typeof d.revision !== "number") throw new Error("设置响应缺少 revision");
+  if (typeof d.revision !== "number") throw new Error(t("settings.error.revisionMissing"));
   const items = list(d.items).map((item) => {
     if (
       typeof item.key !== "string" ||
@@ -83,7 +96,7 @@ function normalize(value: unknown): {
       !("value" in item) ||
       !("stored" in item)
     )
-      throw new Error("设置 schema 字段不完整");
+      throw new Error(t("settings.error.schemaIncomplete"));
     return {
       key: item.key,
       value: item.value,
@@ -101,8 +114,8 @@ function normalize(value: unknown): {
   return {
     revision: d.revision,
     items,
-    audit: object(d.audit, "审计状态"),
-    session: object(d.session ?? {}, "会话存储状态"),
+    audit: object(d.audit, t("settings.auditState")),
+    session: object(d.session ?? {}, t("settings.sessionState")),
   };
 }
 type SettingsGroup = [string, string, Setting[]];
@@ -127,7 +140,8 @@ function SettingsTabs({
           className={tab === key ? s.selectedTab : ""}
           onClick={() => onChange(key)}
         >
-          {label}（{rows.length}）
+          {label}
+          {currentLanguage() === "en" ? ` (${rows.length})` : `（${rows.length}）`}
         </button>
       ))}
       <button
@@ -241,7 +255,7 @@ function SettingsForm({
           return (
             <div className={s.setting} key={item.key}>
               <div className={s.settingDescription}>
-                <strong title={item.key}>{item.label}</strong>
+                <strong title={item.key}>{getSettingLabel(item)}</strong>
                 {item.key === "model_capability_guard" && (
                   <small>{t("models.guard.capabilityHelp")}</small>
                 )}
@@ -268,7 +282,7 @@ function SettingsForm({
                   <p className={s.note}>{t("settings.unsupportedNote")}</p>
                 ) : (
                   <label className={s.field}>
-                    <span className={s.srOnly}>{item.label}</span>
+                    <span className={s.srOnly}>{getSettingLabel(item)}</span>
                     {item.choices ? (
                       <Select
                         value={JSON.stringify(value)}
