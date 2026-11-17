@@ -46,6 +46,15 @@ describe("i18n", () => {
   it("falls back to the key itself when an entry is missing", () => {
     expect(translate("missing.key.entirely")).toBe("missing.key.entirely");
   });
+  it("translates settings schema keys in both languages", () => {
+    act(() => chooseLanguage("en"));
+    expect(translate("settings.schema.host")).toBe("Host Address");
+    expect(translate("settings.schema.audit_retention_days")).toBe("Audit Retention Days");
+    act(() => chooseLanguage("zh"));
+    expect(translate("settings.schema.host")).toBe("监听地址");
+    expect(translate("settings.schema.audit_retention_days")).toBe("审计明细保留天数");
+    act(() => chooseLanguage("system"));
+  });
   it("cycles the interface language with the header toggle", async () => {
     const { LanguageToggle } = await import("./appearance");
     render(
