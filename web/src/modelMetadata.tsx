@@ -16,11 +16,10 @@ const names: Record<string, string> = {
   reasoning: "思考",
   thinking_disable: "关闭思考",
 };
+const VALID_STATES = new Set(["supported", "unsupported", "mixed", "unknown"]);
 const states: Record<string, string> = {
   supported: "支持",
   unsupported: "不支持",
-  mixed: stateName("mixed"),
-  unknown: stateName("unknown"),
 };
 const labels: Record<string, string> = {
   id: "上游标识",
@@ -59,10 +58,11 @@ const labels: Record<string, string> = {
   top_k: "Top K 建议",
   repetition_penalty: "重复惩罚建议",
 };
-const groups: [string, string, string[]][] = [
+const groups: [string, string, string, string[]][] = [
   [
     "modelMeta.section.basic",
     "基本信息",
+    "Basic Information",
     [
       "id",
       "name",
@@ -80,6 +80,7 @@ const groups: [string, string, string[]][] = [
   [
     "modelMeta.section.limits",
     "能力与限制",
+    "Capabilities & Limits",
     [
       "supportsImages",
       "disabledMultimodal",
@@ -97,6 +98,7 @@ const groups: [string, string, string[]][] = [
   [
     "modelMeta.section.reasoning",
     "思考与参数建议",
+    "Reasoning & Parameter Suggestions",
     [
       "reasoning",
       "relatedModels",
@@ -115,7 +117,7 @@ export function CapabilityBadges({ model, full = false }: { model: Facts; full?:
     <div className={s.badgeStack}>
       {(full ? Object.keys(names) : ["images", "tools", "reasoning"]).map((key) => {
         const raw = declared[key];
-        const state = typeof raw === "string" && Object.hasOwn(states, raw) ? raw : "unknown";
+        const state = typeof raw === "string" && VALID_STATES.has(raw) ? raw : "unknown";
         return (
           <Badge
             key={key}
@@ -144,22 +146,45 @@ const chipTones: Record<string, string> = {
 function tagName(key: string): string {
   const k = "modelMeta.tags." + (key === "thinking_disable" ? "thinkingDisable" : key);
   const t = translate(k);
-  return t !== k ? t : (names[key] ?? key);
+  if (t !== k) return t;
+  if (currentLanguage() === "en") {
+    if (key === "images") return "Images";
+    if (key === "tools") return "Tools";
+    if (key === "reasoning") return "Reasoning";
+    if (key === "thinking_disable") return "Disable Thinking";
+  }
+  return names[key] ?? key;
 }
 function stateName(key: string): string {
   const k = "modelMeta.status." + key;
   const t = translate(k);
-  return t !== k ? t : (states[key] ?? key);
+  if (t !== k) return t;
+  if (currentLanguage() === "en") {
+    if (key === "supported") return "Supported";
+    if (key === "unsupported") return "Unsupported";
+    if (key === "mixed") return "Mixed";
+    if (key === "unknown") return "Unknown";
+  }
+  if (key === "mixed") return "因路由而异";
+  if (key === "unknown") return "未知";
+  return states[key] ?? key;
 }
 function fieldLabel(key: string): string {
   const k = "modelMeta.fields." + key;
   const t = translate(k);
-  return t !== k ? t : (labels[key] ?? key);
+  if (t !== k) return t;
+  if (currentLanguage() === "en") return key.replace(/([A-Z])/g, " $1").trim();
+  return labels[key] ?? key;
 }
 function chipLabel(key: string): string {
   if (key === "images") return translate("modelMeta.label.vision");
   if (key === "tools") return translate("modelMeta.label.tools");
   if (key === "reasoning") return translate("modelMeta.label.inference");
+  if (currentLanguage() === "en") {
+    if (key === "images") return "Vision";
+    if (key === "tools") return "Tools";
+    if (key === "reasoning") return "Reasoning";
+  }
   return chipNames[key] ?? key;
 }
 
@@ -249,7 +274,7 @@ export function CapabilityChips({ model }: { model: Facts }) {
       <div className={s.chipRow}>
         {(["images", "tools", "reasoning"] as const).map((key) => {
           const raw = declared[key];
-          const state = typeof raw === "string" && Object.hasOwn(states, raw) ? raw : "unknown";
+          const state = typeof raw === "string" && VALID_STATES.has(raw) ? raw : "unknown";
           if (state === "mixed")
             notes.push(
               currentLanguage() === "en"
@@ -480,11 +505,16 @@ export function ModelMetadata({ model }: { model: Facts }) {
                 <Empty title={translate("modelMeta.label.emptySourceCapabilities")} />
               )}
               <CatalogSource entry={entry} />
-              {groups.map(([i18nKey, fallbackTitle, keys]) => {
+              {groups.map(([i18nKey, fallbackZh, fallbackEn, keys]) => {
                 const data = Object.fromEntries(
                   keys.filter((key) => Object.hasOwn(entry, key)).map((key) => [key, entry[key]]),
                 );
-                const title = translate(i18nKey) !== i18nKey ? translate(i18nKey) : fallbackTitle;
+                const title =
+                  translate(i18nKey) !== i18nKey
+                    ? translate(i18nKey)
+                    : currentLanguage() === "en"
+                      ? fallbackEn
+                      : fallbackZh;
                 return (
                   Object.keys(data).length > 0 && (
                     <Panel title={title} key={i18nKey}>

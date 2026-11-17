@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { t as translate } from "./i18n";
+import { t as translate, currentLanguage } from "./i18n";
 import { api, errorMessage, object, type ModelRule, type RecordValue } from "./api";
 import { profileLabel } from "./components";
 import { jobResponse, useJobPolling, type Job } from "./jobs";
@@ -268,7 +268,9 @@ export function RateOverrideFields({
       {results.map((row) => (
         <div className={s.actions} key={row.profile}>
           <small>
-            {profileLabel(row.profile)}：{row.message}
+            {profileLabel(row.profile)}
+            {currentLanguage() === "en" ? ": " : "："}
+            {row.message}
           </small>
           {row.rate != null && (
             <button

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { t as translate } from "../i18n";
+import { t as translate, currentLanguage, useT } from "../i18n";
 import {
   api,
   catalogScanResponse,
@@ -59,14 +59,14 @@ import { JobBanner, ProgressBanner, type Job } from "../jobs";
 import s from "../ui.module.scss";
 import { SearchInput, Select } from "../fields";
 import { clearToasts, notify } from "../toast";
-import { useT } from "../i18n";
 const t = translate;
 export const profiles = ["cn-cli", "cn-work", "intl-cli", "intl-work"];
-const mediaKindLabels: Record<string, string> = {
-  image: translate("models.media.image"),
-  edit: translate("models.media.edit"),
-  video: translate("models.media.video"),
-};
+export function mediaKindLabel(kind: string): string {
+  if (kind === "image") return translate("models.media.image");
+  if (kind === "edit") return translate("models.media.edit");
+  if (kind === "video") return translate("models.media.video");
+  return kind;
+}
 const validId = (id: string) => /^[A-Za-z0-9_.:/@-]{1,160}$/.test(id) && ![".", ".."].includes(id);
 export function validateRule(
   rule: ModelRule,
@@ -345,7 +345,7 @@ export function ModelEditor({
         if (save) {
           const result = object(response.data);
           if (!Number.isInteger(result.revision) || Number(result.revision) <= revision)
-            throw new Error("后端未确认模型保存，请刷新后核验");
+            throw new Error(translate("models.error.saveNotConfirmed"));
           onSaved();
           onClose();
         } else {
@@ -784,9 +784,9 @@ function notifyScan(scan: CatalogScan) {
     .filter(([, row]) => row.distinct > 1)
     .map(
       ([name, row]) =>
-        `${name}：${translate("models.actions.catalogVersions", { count: row.distinct })}`,
+        `${name}${currentLanguage() === "en" ? ": " : "："}${translate("models.actions.catalogVersions", { count: row.distinct })}`,
     )
-    .join("；");
+    .join(currentLanguage() === "en" ? "; " : "；");
   const failed = scan.status === "failed";
   notify({
     key: "scan",
@@ -879,7 +879,7 @@ export function Models() {
         notify({
           key: "guard",
           tone: "good",
-          title: `${key === "model_guard" ? translate("models.guard.modelGuard") : translate("models.guard.capabilityGuard")}${next ? translate("models.guard.enabled") : translate("models.guard.disabled")}`,
+          title: `${key === "model_guard" ? translate("models.guard.modelGuard") : translate("models.guard.capabilityGuard")}${currentLanguage() === "en" ? ": " : ""}${next ? translate("models.guard.enabled") : translate("models.guard.disabled")}`,
           body:
             key === "model_capability_guard" && !next ? (
               <span>{translate("models.guard.capabilityHelp")}</span>
@@ -1090,7 +1090,8 @@ export function Models() {
                 onChange={(e) => toggleGuard("model_capability_guard", e.target.checked)}
               />
               <span>
-                {translate("models.guard.capabilityCheck")}：
+                {translate("models.guard.capabilityCheck")}
+                {currentLanguage() === "en" ? ": " : "："}
                 {resource.data?.model_capability_guard === undefined
                   ? translate("values.unknown")
                   : resource.data.model_capability_guard
@@ -1129,7 +1130,7 @@ export function Models() {
                             {m.custom && <Badge>{translate("models.badge.custom")}</Badge>}
                             {m.media_kinds?.map((kind) => (
                               <Badge key={kind} tone="neutral">
-                                {mediaKindLabels[kind] ?? kind}
+                                {mediaKindLabel(kind)}
                               </Badge>
                             ))}
                             {m.embedding && (
@@ -1294,7 +1295,7 @@ export function Models() {
                   })
                   .then((response) => {
                     if (object(response.data).ok !== true)
-                      throw new Error("后端未确认删除，请刷新后核验");
+                      throw new Error(translate("models.error.deleteNotConfirmed"));
                     setDeleting(null);
                     resource.reload();
                   })
