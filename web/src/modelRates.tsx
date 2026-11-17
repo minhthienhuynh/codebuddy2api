@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { t as translate } from "./i18n";
 import { api, errorMessage, object, type ModelRule, type RecordValue } from "./api";
 import { profileLabel } from "./components";
 import { jobResponse, useJobPolling, type Job } from "./jobs";
@@ -60,13 +61,16 @@ export function formatEstimate(value: number): string {
 export function measuredNote(detail: RateDetail): string {
   const m = detail.measured;
   if (!m) return "";
-  const average = m.avg_credit != null ? `，平均 ≈${m.avg_credit} 积分/次` : "";
-  return (
-    `上游目录声明 ${detail.declared ?? 0}x，但对该模型实际扣费（近 7 天 ${m.charged}/${m.samples} 次计费${average}）；` +
-    (m.rate != null
-      ? "倍率来自探测：同一请求对照本产品已声明倍率的参考模型折算"
-      : "日常流量多命中会话缓存，单次扣费不能折算倍率；点「一键探测倍率」测出")
-  );
+  const average =
+    m.avg_credit != null ? translate("models.rates.avgCredit", { avg: m.avg_credit }) : "";
+  return translate("models.rates.chargedDesc", {
+    declared: detail.declared ?? 0,
+    charged: m.charged,
+    samples: m.samples,
+    avg: average,
+    note:
+      m.rate != null ? translate("models.rates.probeNote") : translate("models.rates.cacheNote"),
+  });
 }
 
 export type OutputProbe = {
@@ -97,10 +101,12 @@ export function useOutputProbes(): Record<string, OutputProbe> {
 export function OutputProbeNote({ probe }: { probe: OutputProbe | undefined }) {
   if (!probe) return null;
   const tip = [
-    `声称 ${probe.claimed ? formatTokens(probe.claimed) : "?"}`,
-    `实测 ${probe.measured ? formatTokens(probe.measured) : "?"}`,
+    translate("models.rates.claimed", { val: probe.claimed ? formatTokens(probe.claimed) : "?" }),
+    translate("models.rates.measured", {
+      val: probe.measured ? formatTokens(probe.measured) : "?",
+    }),
     probe.note,
-    probe.tested_at && `探测于 ${probe.tested_at}`,
+    probe.tested_at && translate("models.rates.testedAt", { val: probe.tested_at }),
   ]
     .filter(Boolean)
     .join(" · ");
@@ -110,7 +116,11 @@ export function OutputProbeNote({ probe }: { probe: OutputProbe | undefined }) {
     return (
       <span className={s.probeNote} title={tip}>
         <strong className={s.probeClamped}>{formatTokens(measured)} ⚠</strong>
-        <small>钳制 {times >= 10 ? Math.round(times) : Math.round(times * 10) / 10}×</small>
+        <small>
+          {translate("models.rates.clamped", {
+            times: times >= 10 ? Math.round(times) : Math.round(times * 10) / 10,
+          })}
+        </small>
       </span>
     );
   }
@@ -134,7 +144,7 @@ export function OutputProbeNote({ probe }: { probe: OutputProbe | undefined }) {
   return (
     <span className={s.probeNote} title={tip}>
       <strong className={s.probeMuted}>?</strong>
-      <small>未测出</small>
+      <small>{translate("models.rates.untested")}</small>
     </span>
   );
 }
@@ -202,9 +212,9 @@ export function RateOverrideFields({
   };
   return (
     <fieldset className={s.fieldset}>
-      <legend>消费倍率</legend>
-      <p>留空按上游目录或实测计费；手填后路由与 /v1/models 均以手填值为准。0 表示确认免费。</p>
-      {!served.length && <p>当前没有账号目录提供该模型。</p>}
+      <legend>{translate("models.rates.legend")}</legend>
+      <p>{translate("models.rates.overrideDesc")}</p>
+      {!served.length && <p>{translate("models.rates.noModelsServed")}</p>}
       <div className={s.formGrid}>
         {served.map((profile) => {
           const detail = details[profile];
@@ -212,10 +222,10 @@ export function RateOverrideFields({
           const effective = finite(prices[profile]);
           const hint =
             source === "measured"
-              ? `实测计费 ${detail?.measured?.rate != null ? formatEstimate(detail.measured.rate) : "倍率待估"}（目录 ${detail?.declared ?? 0}x）`
+              ? `${translate("models.rates.measured")} ${detail?.measured?.rate != null ? formatEstimate(detail.measured.rate) : translate("models.rates.measuredPending")} (${translate("models.rates.claimed")} ${detail?.declared ?? 0}x)`
               : effective != null
-                ? `目录 ${formatEstimate(source === "manual" ? (detail?.declared ?? effective) : effective)}`
-                : "目录倍率未知";
+                ? `${translate("models.rates.claimed")} ${formatEstimate(source === "manual" ? (detail?.declared ?? effective) : effective)}`
+                : translate("models.rates.profileUnknown");
           return (
             <label className={s.field} key={profile}>
               {profileLabel(profile)}
@@ -225,8 +235,10 @@ export function RateOverrideFields({
                 max={1000}
                 step="any"
                 inputMode="decimal"
-                aria-label={`手填倍率 ${profileLabel(profile)}`}
-                placeholder="自动"
+                aria-label={translate("models.rates.manualAria", {
+                  profile: profileLabel(profile),
+                })}
+                placeholder={translate("models.rates.autoPlaceholder")}
                 value={drafts[profile] ?? ""}
                 disabled={disabled}
                 onChange={(e) => edit(profile, e.target.value)}
@@ -241,14 +253,14 @@ export function RateOverrideFields({
           <button
             type="button"
             disabled={disabled || running || !served.length}
-            title="后台任务：每个产品发起一次 ≈8K token 对话；有扣费即为实测计费，未扣费才是真 0 倍率。关闭抽屉不影响执行"
+            title={translate("models.rates.probeHover")}
             onClick={() => probe.start(model.id)}
           >
             {running
               ? job?.meta.scope === model.id
-                ? "探测中…"
-                : "其他探测进行中…"
-              : "一键探测倍率"}
+                ? translate("models.rates.probingSingle")
+                : translate("models.rates.probingOther")
+              : translate("models.rates.probeButton")}
           </button>
         </div>
       )}
@@ -264,7 +276,7 @@ export function RateOverrideFields({
               disabled={disabled}
               onClick={() => edit(row.profile, String(row.rate))}
             >
-              填入 {formatEstimate(row.rate)}
+              {translate("models.rates.fillRate", { rate: formatEstimate(row.rate) })}
             </button>
           )}
         </div>
@@ -277,7 +289,7 @@ export function RateOverrideFields({
 export function describeProbe(item: RecordValue, step: string | null): string {
   const model = typeof item.model === "string" ? item.model : "?";
   const profile = typeof item.profile === "string" ? profileLabel(item.profile) : "";
-  return `探测 ${model}（${profile}）${step ? ` · ${step}` : ""}`;
+  return translate("models.rates.describe", { model, profile, step: step ? ` · ${step}` : "" });
 }
 
 export function useRateProbeJob(onFinished: (job: Job) => void) {
