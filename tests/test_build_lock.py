@@ -117,7 +117,8 @@ class BuildLockTests(unittest.TestCase):
         for event in ("pull_request", "push"):
             self.assertEqual(workflow[True][event]["paths-ignore"], docs)
         jobs = workflow["jobs"]
-        self.assertEqual(jobs["web"]["needs"], ["test"])
+        self.assertNotIn("needs", jobs["web"])
+        self.assertEqual(sorted(jobs["image"]["needs"]), ["test", "web"])
         self.assertEqual(jobs["image"]["if"], "github.event_name != 'pull_request'")
         steps = jobs["image"]["steps"]
         download = next(step for step in steps if str(step.get("uses", "")).startswith("actions/download-artifact"))
