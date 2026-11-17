@@ -956,7 +956,7 @@ export function Credentials() {
           : remaining !== null && remaining > 0
             ? `${healthLabel("circuit_open")} ${remaining}s`
             : c.health === "ready"
-              ? healthLabel("ready")
+              ? translate("credentials.health.readyBadge")
               : healthLabel(c.health);
     return (
       <Badge
