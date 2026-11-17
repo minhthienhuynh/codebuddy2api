@@ -272,30 +272,35 @@ function statusLabel(val: string): string {
   const k3 = "values.kind." + val;
   const t3 = translate(k3);
   if (t3 !== k3) return t3;
+  if (currentLanguage() === "en") return val.replaceAll("_", " ");
   return ownLabel(statuses, val) ?? val;
 }
 function travelPhaseLabel(val: string): string {
   const k = "values.phase." + val;
   const t = translate(k);
   if (t !== k) return t;
+  if (currentLanguage() === "en") return val.replaceAll("_", " ");
   return ownLabel(travelPhases, val) ?? val;
 }
 function travelErrorLabel(val: string): string {
   const k = "values.error." + val;
   const t = translate(k);
   if (t !== k) return t;
+  if (currentLanguage() === "en") return val.replaceAll("_", " ");
   return ownLabel(travelErrors, val) ?? val;
 }
 function travelStateLabel(val: string): string {
   const k = "values.status." + val;
   const t = translate(k);
   if (t !== k) return t;
+  if (currentLanguage() === "en") return val.replaceAll("_", " ");
   return ownLabel(travelStates, val) ?? val;
 }
 function labelOf(key: string): string {
   const k = "values." + key;
   const t = translate(k);
   if (t !== k) return t;
+  if (currentLanguage() === "en") return key.replaceAll("_", " ");
   return ownLabel(labels, key) ?? key.replaceAll("_", " ");
 }
 

@@ -1220,6 +1220,8 @@ const zh = {
   "models.valid.regionInvalid": "区域无效",
   "models.valid.scopeConflict": "指定账号与区域/产品范围只能选择一种",
   "models.valid.upstreamRequired": "上游 ID 不能为空，且须为有效模型标识",
+  "models.error.saveNotConfirmed": "后端未确认模型保存，请刷新后核验",
+  "models.error.deleteNotConfirmed": "后端未确认删除，请刷新后核验",
   "pagination.pageN": "第 {page} 页",
   "settings.activeValue": "当前生效：{val}",
   "settings.apply.hot": "即时生效",
@@ -2851,6 +2853,9 @@ const en: Record<MessageKey, string> = {
   "models.valid.scopeConflict": "Specify accounts OR region/product scope, not both",
   "models.valid.upstreamRequired":
     "Upstream ID cannot be empty and must be a valid model identifier",
+  "models.error.saveNotConfirmed": "Backend did not confirm model save; please refresh to verify",
+  "models.error.deleteNotConfirmed":
+    "Backend did not confirm model deletion; please refresh to verify",
   "pagination.pageN": "Page {page}",
   "settings.activeValue": "Currently active: {val}",
   "settings.apply.hot": "Hot reload",
@@ -3254,6 +3259,7 @@ function savedPref(): LangPref {
   }
 }
 let currentPref: LangPref = "system";
+let currentLang: Lang = "zh";
 export function serverPreference(value: unknown): LangPref {
   if (value === "zh" || value === "en") return value;
   return "system";
@@ -3263,6 +3269,7 @@ export function languagePreference(): LangPref {
 }
 export function chooseLanguage(pref: LangPref) {
   currentPref = pref;
+  currentLang = pref === "system" ? systemLang() : pref;
   try {
     localStorage.setItem(STORAGE_KEY, pref);
   } catch {
@@ -3271,7 +3278,6 @@ export function chooseLanguage(pref: LangPref) {
   window.dispatchEvent(new CustomEvent(LANG_EVENT, { detail: pref }));
 }
 
-let currentLang: Lang = "zh";
 const LangContext = createContext<Lang>("zh");
 
 export function translate(key: string, vars?: Record<string, string | number>): string {

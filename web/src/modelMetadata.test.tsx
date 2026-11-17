@@ -12,7 +12,8 @@ import {
   rateOf,
   specRange,
 } from "./modelMetadata";
-import { Models } from "./pages/Models";
+import { Models, mediaKindLabel } from "./pages/Models";
+import { chooseLanguage } from "./i18n";
 import { choose } from "./test-utils";
 
 const model: ModelRule = {
@@ -331,5 +332,31 @@ describe("capability guard settings on model routing", () => {
     const guardSwitch = await screen.findByRole("switch", { name: /表外模型拦截/ });
     expect(capSwitch).toHaveProperty("disabled", true);
     expect(guardSwitch).toHaveProperty("disabled", true);
+  });
+});
+
+describe("model routing localization", () => {
+  it("translates media kind labels dynamically according to language preference", () => {
+    chooseLanguage("zh");
+    expect(mediaKindLabel("image")).toBe("文生图");
+    expect(mediaKindLabel("edit")).toBe("图生图");
+    expect(mediaKindLabel("video")).toBe("视频");
+
+    chooseLanguage("en");
+    expect(mediaKindLabel("image")).toBe("Text to Image");
+    expect(mediaKindLabel("edit")).toBe("Image to Image");
+    expect(mediaKindLabel("video")).toBe("Video");
+
+    chooseLanguage("zh");
+  });
+
+  it("renders CapabilityBadges in English when en is chosen", () => {
+    chooseLanguage("en");
+    const { unmount } = render(<CapabilityBadges model={model} />);
+    expect(screen.getByText("Vision: Varies by Route")).toBeTruthy();
+    expect(screen.getByText("Tools: Supported")).toBeTruthy();
+    expect(screen.getByText("Reasoning: Supported")).toBeTruthy();
+    unmount();
+    chooseLanguage("zh");
   });
 });
