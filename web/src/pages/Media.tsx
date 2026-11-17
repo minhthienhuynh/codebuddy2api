@@ -61,7 +61,7 @@ export type MediaSummary = {
 };
 
 export function normalizeMediaSummary(value: unknown): MediaSummary {
-  const data = object(value, "媒体概览");
+  const data = object(value, "media overview");
   const group = (raw: unknown) => ({
     count: number((raw as RecordValue)?.count) ?? 0,
     bytes: number((raw as RecordValue)?.bytes) ?? 0,
@@ -112,9 +112,9 @@ export function taskStatusTone(status: unknown): "good" | "bad" | "neutral" {
 }
 
 function pageNormalize(value: unknown) {
-  const data = object(value, "媒体列表");
+  const data = object(value, "media list");
   if (typeof data.has_more !== "boolean" || (data.has_more && typeof data.next_cursor !== "string"))
-    throw new Error("媒体列表分页响应不完整");
+    throw new Error("Media list pagination incomplete");
   return {
     items: list(data.items),
     next_cursor: typeof data.next_cursor === "string" ? data.next_cursor : null,
@@ -255,7 +255,7 @@ function MediaSettingsDrawer({ onClose, onSaved }: { onClose: () => void; onSave
       .get<unknown>("/settings")
       .then((response) => {
         if (cancelled) return;
-        const data = object(response.data, "设置");
+        const data = object(response.data, "settings");
         const items = list(data.items);
         const find = (key: string) => items.find((item) => item.key === key);
         setForm({
@@ -404,7 +404,7 @@ export function Media() {
   const openAssetById = (id: string) => {
     void api
       .get<unknown>(`/media/assets/${encodeURIComponent(id)}`)
-      .then((response) => setPreview(object(response.data, "媒体资源")))
+      .then((response) => setPreview(object(response.data, "media asset")))
       .catch((err: unknown) =>
         notify({ key: `media-open-${id}`, tone: "bad", title: errorMessage(err) }),
       );
@@ -565,7 +565,7 @@ export function Media() {
               <Empty title={t("media.empty.library")}>{t("media.empty.libraryHint")}</Empty>
             ))}
           <div className={s.pagination}>
-            <span>第 {assetCursors.length + 1} 页</span>
+            <span>{t("pagination.pageN", { page: assetCursors.length + 1 })}</span>
             <div className={s.actions}>
               <button
                 disabled={!assetCursors.length || assets.loading}
@@ -713,7 +713,7 @@ export function Media() {
               <Empty title={t("media.empty.tasks")} />
             ))}
           <div className={s.pagination}>
-            <span>第 {taskCursors.length + 1} 页</span>
+            <span>{t("pagination.pageN", { page: taskCursors.length + 1 })}</span>
             <div className={s.actions}>
               <button
                 disabled={!taskCursors.length || tasks.loading}

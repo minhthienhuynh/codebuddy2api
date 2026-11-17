@@ -1,7 +1,8 @@
 import { metric, type Credential, type RecordValue } from "./api";
 import { Badge, Empty, Icon, Panel } from "./components";
+import { t as translate, currentLanguage } from "./i18n";
 import {
-  CATEGORY_LABELS,
+  getCategoryLabel,
   agoLabel,
   creditBreakdown,
   dateLabel,
@@ -27,7 +28,7 @@ function PackageRow({ pkg, now }: { pkg: CreditPackage; now: number }) {
         <span className={s.creditPackageHead}>
           <span className={s.creditDot} aria-hidden="true" />
           <strong title={pkg.code || undefined}>{pkg.label}</strong>
-          <span className={s.creditCategory}>{CATEGORY_LABELS[pkg.category]}</span>
+          <span className={s.creditCategory}>{getCategoryLabel(pkg.category)}</span>
           <span className={s.creditAmount}>
             {metric(pkg.remaining)}
             <small> / {metric(pkg.total)}</small>
@@ -38,31 +39,38 @@ function PackageRow({ pkg, now }: { pkg: CreditPackage; now: number }) {
         </span>
         <span className={s.creditMeta}>
           <small>
-            {pkg.segments.length} 段
+            {translate("credits.panel.segments", { count: pkg.segments.length })}
             {pkg.soonest === null
               ? ""
               : pkg.longTerm
-                ? ` · ${dateLabel(pkg.soonest, now)} 到期`
-                : ` · 最近到期 ${dateLabel(pkg.soonest, now)}（${untilLabel(pkg.soonest, now)}）`}
+                ? translate("credits.panel.expiresAt", { date: dateLabel(pkg.soonest, now) })
+                : translate("credits.panel.soonestExpiry", {
+                    date: dateLabel(pkg.soonest, now),
+                    until: untilLabel(pkg.soonest, now),
+                  })}
           </small>
           {pkg.soonRemaining > 0 && (
-            <Badge tone="warn">7 天内到期 {metric(pkg.soonRemaining)}</Badge>
+            <Badge tone="warn">
+              {translate("credits.panel.expire7Days", { amount: metric(pkg.soonRemaining) })}
+            </Badge>
           )}
-          {pkg.longTerm && <Badge tone="good">长期有效</Badge>}
+          {pkg.longTerm && <Badge tone="good">{translate("credits.panel.longTermBadge")}</Badge>}
           {pkg.expiredRemaining > 0 && (
-            <Badge tone="bad">已过期 {metric(pkg.expiredRemaining)}</Badge>
+            <Badge tone="bad">
+              {translate("credits.panel.expiredBadge", { amount: metric(pkg.expiredRemaining) })}
+            </Badge>
           )}
-          <span className={s.creditToggle}>明细</span>
+          <span className={s.creditToggle}>{translate("credits.panel.details")}</span>
         </span>
       </summary>
       <div className={`${s.tableWrap} ${s.panelScroll}`}>
         <table>
           <thead>
             <tr>
-              <th>到期时间</th>
-              <th>剩余</th>
-              <th>总额</th>
-              <th>距到期</th>
+              <th>{translate("credits.panel.thExpires")}</th>
+              <th>{translate("credits.panel.thRemaining")}</th>
+              <th>{translate("credits.panel.thTotal")}</th>
+              <th>{translate("credits.panel.thUntil")}</th>
             </tr>
           </thead>
           <tbody>
@@ -98,17 +106,17 @@ export function BalanceExpiry({ credits, now }: { credits: RecordValue | null; n
   return (
     <small className={s.credExpiry}>
       {!b ? (
-        "尚未同步"
+        translate("credits.panel.notSynced")
       ) : b.unlimited ? (
-        "企业无限额度"
+        translate("credits.panel.unlimited")
       ) : b.soonest ? (
         <>
-          最近到期 <span>{dateLabel(b.soonest.at, now)}</span>
+          {translate("credits.panel.recentExpiry")} <span>{dateLabel(b.soonest.at, now)}</span>
         </>
       ) : b.segmentCount > 0 && b.expired.count === b.segmentCount ? (
-        "已全部过期，待同步"
+        translate("credits.panel.allExpired")
       ) : (
-        "无到期信息"
+        translate("credits.panel.noExpiry")
       )}
     </small>
   );
@@ -123,15 +131,17 @@ export function CreditsPanel({ credential, now }: { credential: Credential; now:
   const raw = credential.credits;
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
     return (
-      <Panel title="额度概览">
+      <Panel title={translate("credits.panel.overviewTitle")}>
         <div className={s.panelBody}>
           {syncError && (
             <div className={s.warning} role="status">
               <Icon name="alert" />
-              <div>最近同步失败：{syncError}</div>
+              <div>{translate("credits.panel.syncFailed", { error: syncError ?? "" })}</div>
             </div>
           )}
-          <Empty title="尚未同步官方额度">点击上方「同步余额」图标获取。</Empty>
+          <Empty title={translate("credits.panel.emptyTitle")}>
+            {translate("credits.panel.emptyDesc")}
+          </Empty>
         </div>
       </Panel>
     );
@@ -140,18 +150,23 @@ export function CreditsPanel({ credential, now }: { credential: Credential; now:
   const age = b.fetchedAt === null ? null : agoLabel(b.fetchedAt, now);
   const notices = [
     syncError
-      ? `最近同步失败：${syncError}${age ? `；以下为 ${age}的快照` : ""}`
+      ? age
+        ? translate("credits.panel.syncFailedWithSnapshot", { error: syncError, age })
+        : translate("credits.panel.syncFailed", { error: syncError })
       : b.stale && age
-        ? `额度快照更新于 ${age}，可能已变化`
+        ? translate("credits.panel.snapshotAge", { age })
         : null,
-    b.partial ? "上游分页未取全，额度可能偏少" : null,
+    b.partial ? translate("credits.panel.partialNote") : null,
     b.expired.count
-      ? `快照中有 ${b.expired.count} 段共 ${metric(b.expired.remaining)} 积分已过期，下次同步后移除`
+      ? translate("credits.panel.expiredSegmentsNote", {
+          count: b.expired.count,
+          amount: metric(b.expired.remaining),
+        })
       : null,
   ].filter((line): line is string => line !== null);
   return (
     <>
-      <Panel title="额度概览">
+      <Panel title={translate("credits.panel.overviewTitle")}>
         <div className={s.panelBody}>
           {notices.length > 0 && (
             <div className={s.warning} role="status">
@@ -165,33 +180,40 @@ export function CreditsPanel({ credential, now }: { credential: Credential; now:
           )}
           <div className={`${s.credUsageBox} ${s.creditTiles}`}>
             <div>
-              <span>官方剩余</span>
-              <strong>{b.unlimited ? "无限" : metric(b.total)}</strong>
+              <span>{translate("credits.panel.officialRemaining")}</span>
+              <strong>{b.unlimited ? translate("credits.panel.infinite") : metric(b.total)}</strong>
               <small>
                 {b.unlimited
-                  ? "企业配额不参与余额折算"
-                  : `${b.packages.length} 个套餐 · ${b.segmentCount} 段`}
+                  ? translate("credits.panel.enterpriseUnlimitedNote")
+                  : translate("credits.panel.packageSummary", {
+                      packages: b.packages.length,
+                      segments: b.segmentCount,
+                    })}
               </small>
             </div>
             <div>
-              <span>7 天内到期</span>
+              <span>{translate("credits.panel.within7Days")}</span>
               <strong className={b.soon.remaining > 0 ? s.creditWarnValue : undefined}>
                 {b.unlimited ? "—" : metric(b.soon.remaining)}
               </strong>
-              <small>{b.soon.count ? `${b.soon.count} 段` : "暂无"}</small>
+              <small>
+                {b.soon.count
+                  ? translate("credits.panel.segments", { count: b.soon.count })
+                  : translate("credits.panel.none")}
+              </small>
             </div>
             <div>
-              <span>最近到期</span>
+              <span>{translate("credits.panel.recentExpiry")}</span>
               <strong>{b.soonest ? dateLabel(b.soonest.at, now) : "—"}</strong>
               <small>
                 {b.soonest
                   ? `${untilLabel(b.soonest.at, now)} · ${metric(b.soonest.remaining)}`
-                  : "无到期信息"}
+                  : translate("credits.panel.noExpiry")}
               </small>
             </div>
             <div>
-              <span>同步时间</span>
-              <strong>{age ?? "未知"}</strong>
+              <span>{translate("credits.panel.syncTime")}</span>
+              <strong>{age ?? translate("values.unknown")}</strong>
               <small>{b.fetchedAt === null ? "—" : dateLabel(b.fetchedAt, now)}</small>
             </div>
           </div>
@@ -200,9 +222,11 @@ export function CreditsPanel({ credential, now }: { credential: Credential; now:
               <div
                 className={s.creditMixBar}
                 role="img"
-                aria-label={`额度构成：${b.categories
-                  .map((c) => `${CATEGORY_LABELS[c.category]} ${metric(c.remaining)}`)
-                  .join("，")}`}
+                aria-label={translate("credits.panel.breakdown", {
+                  summary: b.categories
+                    .map((c) => `${getCategoryLabel(c.category)} ${metric(c.remaining)}`)
+                    .join(currentLanguage() === "en" ? ", " : "，"),
+                })}
               >
                 {b.categories.map((c) => (
                   <i
@@ -216,7 +240,7 @@ export function CreditsPanel({ credential, now }: { credential: Credential; now:
                 {b.categories.map((c) => (
                   <li key={c.category} className={CATEGORY_CLASS[c.category]}>
                     <span className={s.creditDot} aria-hidden="true" />
-                    {CATEGORY_LABELS[c.category]}
+                    {getCategoryLabel(c.category)}
                     <strong>{metric(c.remaining)}</strong>
                     <small>{c.share < 0.01 ? "<1%" : `${Math.round(c.share * 100)}%`}</small>
                   </li>
@@ -227,7 +251,10 @@ export function CreditsPanel({ credential, now }: { credential: Credential; now:
         </div>
       </Panel>
       {b.packages.length > 0 && (
-        <Panel title="套餐明细" hint="按剩余额度排序，展开查看每段到期时间">
+        <Panel
+          title={translate("credits.panel.packagesTitle")}
+          hint={translate("credits.panel.packagesHint")}
+        >
           <div className={`${s.panelBody} ${s.creditPackages}`}>
             {b.packages.map((pkg) => (
               <PackageRow key={pkg.key} pkg={pkg} now={now} />

@@ -1,3 +1,4 @@
+import { t as translate } from "./i18n";
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { api, errorMessage, object } from "./api";
 import { lockPage } from "./modal";
@@ -345,7 +346,7 @@ export function ClearLogs({ onClose, onDone }: { onClose: () => void; onDone: ()
         {scope === "all" && (
           <>
             <label className={s.field}>
-              输入“{CLEAR_CONFIRMATION}”
+              {translate("components.typeToConfirm", { text: CLEAR_CONFIRMATION })}
               <input
                 value={confirmation}
                 onChange={(e) => setConfirmation(e.target.value)}
