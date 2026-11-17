@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router";
 import { AppRoutes } from "./App";
 import { api, useResource, useSession } from "./api";
 import { Empty, PageTitle } from "./components";
+import { chooseLanguage } from "./i18n";
 import { Dashboard } from "./pages/Dashboard";
 import { Settings } from "./pages/Settings";
 
@@ -151,6 +152,18 @@ describe("concise user-facing copy", () => {
         values: { audit_retention_days: 90 },
       }),
     );
+  });
+
+  it("renders settings schema in English when English is selected", () => {
+    chooseLanguage("en");
+    try {
+      resource(settings);
+      render(<Settings />);
+      expect(screen.getAllByText("Audit Retention Days").length).toBeGreaterThan(0);
+      expect(screen.getByText("Hot reload")).toBeTruthy();
+    } finally {
+      chooseLanguage("zh");
+    }
   });
 
   it("retains degraded-state warnings, cooldowns, and unknown versus zero metrics", () => {

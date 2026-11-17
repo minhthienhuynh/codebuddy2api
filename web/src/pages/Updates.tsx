@@ -68,9 +68,9 @@ function safeUrl(value: unknown): string | null {
 }
 
 function normalize(value: unknown): UpdateState {
-  const d = object(value, "更新状态");
-  const self = object(d.self_update ?? {}, "更新状态");
-  const job = object(d.job ?? {}, "更新任务");
+  const d = object(value, "update status");
+  const self = object(d.self_update ?? {}, "update status");
+  const job = object(d.job ?? {}, "update job");
   return {
     current: text(d.current),
     repository: safeUrl(d.repository) ?? "",
@@ -81,7 +81,7 @@ function normalize(value: unknown): UpdateState {
     error: optional(d.error),
     latest: optional(d.latest),
     updateAvailable: d.update_available === true,
-    releases: list(d.releases, "版本列表").map((item) => ({
+    releases: list(d.releases, "releases list").map((item) => ({
       tag: text(item.tag),
       version: text(item.version),
       name: text(item.name),

@@ -28,7 +28,7 @@ import { notify } from "../toast";
 import s from "../ui.module.scss";
 
 function normalize(value: unknown) {
-  return object(value, "存储状态");
+  return object(value, "storage status");
 }
 
 function bytes(value: unknown): string {
@@ -270,7 +270,7 @@ function AutoBackupDrawer({ onClose, onSaved }: { onClose: () => void; onSaved: 
       .get<unknown>("/settings")
       .then((response) => {
         if (cancelled) return;
-        const data = object(response.data, "设置");
+        const data = object(response.data, "settings");
         const items = list(data.items);
         const value = (key: string) => items.find((item) => item.key === key)?.value;
         setForm({

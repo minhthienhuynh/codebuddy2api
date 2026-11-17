@@ -1,3 +1,4 @@
+import { t as translate } from "./i18n";
 import { useEffect, useId, useRef, useState, type PointerEvent } from "react";
 import { compact, metric, number, text, type RecordValue } from "./api";
 import { Empty, Icon } from "./components";
@@ -532,8 +533,7 @@ export function UsageTrend({
         )}
       </div>
       <p className={s.srOnly} id={`${id}-hint`}>
-        指向或点按查看时段；滚轮缩放区间，双击或 Esc 复位；键盘左右方向键逐点查看，Home 和 End
-        跳到首尾。
+        {t("charts.usage.hint")}
       </p>
       <details className={s.chartData}>
         <summary>{t("dash.trendData")}</summary>
@@ -541,7 +541,9 @@ export function UsageTrend({
           <thead>
             <tr>
               <th>
-                {displayRows !== rows || granularity === "hour" ? "时段（UTC）" : "日期（UTC）"}
+                {displayRows !== rows || granularity === "hour"
+                  ? translate("charts.th.timeUtc")
+                  : translate("charts.th.dateUtc")}
               </th>
               <th>{t("dash.kpi.requests")}</th>
               <th>{t("dash.kpi.totalTokens")}</th>

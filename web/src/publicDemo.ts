@@ -188,10 +188,16 @@ function modelsView(raw: Json, state: State): Json {
 function notFound(config: InternalAxiosRequestConfig) {
   const result = response(
     config,
-    { error: { message: "媒体资源不存在或已清理", type: "not_found_error" } },
+    { error: { message: "Media asset not found or cleaned up", type: "not_found_error" } },
     404,
   );
-  throw new AxiosError("媒体资源不存在或已清理", "ERR_BAD_REQUEST", config, undefined, result);
+  throw new AxiosError(
+    "Media asset not found or cleaned up",
+    "ERR_BAD_REQUEST",
+    config,
+    undefined,
+    result,
+  );
 }
 
 function keyView(item: Json): Json {

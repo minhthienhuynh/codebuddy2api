@@ -1,7 +1,14 @@
 import { number, type RecordValue } from "./api";
+import { t as translate } from "./i18n";
 
 export type CreditCategory = "plan" | "activity" | "welcome" | "enterprise" | "other";
 export type SegmentState = "expired" | "soon" | "normal" | "long" | "unknown";
+
+export function getCategoryLabel(category: CreditCategory): string {
+  const k = "credits.category." + category;
+  const t = translate(k);
+  return t !== k ? t : (CATEGORY_LABELS[category] ?? category);
+}
 
 export const CATEGORY_LABELS: Record<CreditCategory, string> = {
   plan: "套餐额度",
@@ -90,7 +97,8 @@ export function creditBreakdown(credits: RecordValue, now: number): CreditBreakd
     if (remaining === null) continue;
     const total = Math.max(number(item.total) ?? remaining, remaining);
     const expiresAt = timestamp(item.expires_at);
-    const name = typeof item.source === "string" && item.source ? item.source : "积分";
+    const name =
+      typeof item.source === "string" && item.source ? item.source : translate("dash.points");
     const code = typeof item.package_code === "string" ? item.package_code : "";
     // 同名套餐可能对应不同编号（国际 Bonus Pack），只按名称会把两个套餐合并。
     const key = code || name;
@@ -181,19 +189,19 @@ export function dateLabel(at: number, now: number): string {
 
 export function untilLabel(at: number, now: number): string {
   const diff = at - now;
-  if (diff <= 0) return "已过期";
-  if (diff < 3600) return "1 小时内";
-  if (diff < DAY) return `${Math.floor(diff / 3600)} 小时后`;
-  if (diff > LONG_TERM) return "长期有效";
-  return `${Math.floor(diff / DAY)} 天后`;
+  if (diff <= 0) return translate("credits.time.expired");
+  if (diff < 3600) return translate("credits.time.within1Hour");
+  if (diff < DAY) return translate("credits.time.hoursLater", { hours: Math.floor(diff / 3600) });
+  if (diff > LONG_TERM) return translate("credits.time.longTerm");
+  return translate("credits.time.daysLater", { days: Math.floor(diff / DAY) });
 }
 
 export function agoLabel(at: number, now: number): string {
   const diff = Math.max(0, now - at);
-  if (diff < 60) return "1 分钟内";
-  if (diff < 3600) return `${Math.floor(diff / 60)} 分钟前`;
-  if (diff < DAY) return `${Math.floor(diff / 3600)} 小时前`;
-  return `${Math.floor(diff / DAY)} 天前`;
+  if (diff < 60) return translate("credits.time.within1Min");
+  if (diff < 3600) return translate("credits.time.minsAgo", { mins: Math.floor(diff / 60) });
+  if (diff < DAY) return translate("credits.time.hoursAgo", { hours: Math.floor(diff / 3600) });
+  return translate("credits.time.daysAgo", { days: Math.floor(diff / DAY) });
 }
 
 /** Token expiry in seconds; inventory reports milliseconds, legacy rows seconds. */
