@@ -1,4 +1,4 @@
-import { t as translate } from "./i18n";
+import { t as translate, currentLanguage } from "./i18n";
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { api, errorMessage, object } from "./api";
 import { lockPage } from "./modal";
@@ -291,6 +291,7 @@ export function Drawer({
   );
 }
 export const CLEAR_CONFIRMATION = "清空全部日志与统计";
+export const CLEAR_CONFIRMATION_EN = "clear all";
 export function ClearLogs({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
   const t = useT();
   const [scope, setScope] = useState<"details" | "all">("details");
@@ -298,6 +299,8 @@ export function ClearLogs({ onClose, onDone }: { onClose: () => void; onDone: ()
   const [currentPassword, setCurrentPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const expectedConfirmation =
+    currentLanguage() === "en" ? CLEAR_CONFIRMATION_EN : CLEAR_CONFIRMATION;
   return (
     <Drawer title={t("logs.clear")} onClose={onClose} dismissDisabled={busy}>
       <form
@@ -339,14 +342,16 @@ export function ClearLogs({ onClose, onDone }: { onClose: () => void; onDone: ()
         <div className={s.warning}>
           <Icon name="alert" />
           <div>
-            <strong>{scope === "all" ? CLEAR_CONFIRMATION : t("logs.clear.detailsStrong")}</strong>
+            <strong>
+              {scope === "all" ? expectedConfirmation : t("logs.clear.detailsStrong")}
+            </strong>
             <p>{scope === "all" ? t("logs.clear.allWarning") : t("logs.clear.detailsWarning")}</p>
           </div>
         </div>
         {scope === "all" && (
           <>
             <label className={s.field}>
-              {translate("components.typeToConfirm", { text: CLEAR_CONFIRMATION })}
+              {translate("components.typeToConfirm", { text: expectedConfirmation })}
               <input
                 value={confirmation}
                 onChange={(e) => setConfirmation(e.target.value)}
@@ -369,7 +374,11 @@ export function ClearLogs({ onClose, onDone }: { onClose: () => void; onDone: ()
         <button
           className={s.danger}
           disabled={
-            busy || (scope === "all" && (confirmation !== CLEAR_CONFIRMATION || !currentPassword))
+            busy ||
+            (scope === "all" &&
+              ((confirmation.trim() !== expectedConfirmation &&
+                confirmation.trim() !== CLEAR_CONFIRMATION) ||
+                !currentPassword))
           }
         >
           {busy ? t("logs.clear.busy") : t("logs.clear.confirm")}
