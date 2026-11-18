@@ -1,5 +1,5 @@
 import { number, type RecordValue } from "./api";
-import { t as translate } from "./i18n";
+import { t as translate, currentLanguage } from "./i18n";
 
 export type CreditCategory = "plan" | "activity" | "welcome" | "enterprise" | "other";
 export type SegmentState = "expired" | "soon" | "normal" | "long" | "unknown";
@@ -7,7 +7,9 @@ export type SegmentState = "expired" | "soon" | "normal" | "long" | "unknown";
 export function getCategoryLabel(category: CreditCategory): string {
   const k = "credits.category." + category;
   const t = translate(k);
-  return t !== k ? t : (CATEGORY_LABELS[category] ?? category);
+  if (t !== k) return t;
+  if (currentLanguage() === "en") return category.charAt(0).toUpperCase() + category.slice(1);
+  return CATEGORY_LABELS[category] ?? category;
 }
 
 export const CATEGORY_LABELS: Record<CreditCategory, string> = {

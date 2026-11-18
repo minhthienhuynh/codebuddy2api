@@ -32,6 +32,7 @@ from .updates import UpdateError
 
 MAX_UPLOAD_BYTES = 32 * 1024 * 1024
 CLEAR_CONFIRMATION = "清空全部日志与统计"
+CLEAR_CONFIRMATION_EN = "clear all"
 
 
 class AdminError(Exception):
@@ -963,7 +964,7 @@ def install_admin(app, config, gateway):
             account = auth._account()
             confirmed = (auth.check_password(account.username, body.get("password"))
                          if account is not None else auth.check_key(body.get("api_key")))
-            if body.get("confirmation") != CLEAR_CONFIRMATION or not confirmed:
+            if body.get("confirmation") not in (CLEAR_CONFIRMATION, CLEAR_CONFIRMATION_EN) or not confirmed:
                 return error_response(403, "全部清理需要确认文本及当前管理密码")
         result = await run_in_threadpool(audit.clear, scope)
         if isinstance(result, dict) and result.get("ok") is False:
