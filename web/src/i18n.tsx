@@ -164,6 +164,7 @@ const zh = {
   "updates.notFound": "未找到该版本",
   "updates.noNotes": "该版本没有发布说明",
   "updates.emptyReleases": "暂无发布信息，请点击检查更新",
+  "app.title": "CodeBuddy · 管理控制台",
   "app.skip": "跳转到内容",
   "app.workspace": "工作空间",
   "app.primaryNav": "主导航",
@@ -187,6 +188,7 @@ const zh = {
   "nav.settings": "系统设置",
   "nav.updates": "版本更新",
   "login.subtitle": "网关管理",
+  "login.pageTitle": "登录",
   "login.title": "登录管理控制台",
   "login.username": "用户名",
   "login.password": "密码",
@@ -1820,6 +1822,7 @@ const en: Record<MessageKey, string> = {
   "updates.notFound": "Release not found",
   "updates.noNotes": "This release has no notes",
   "updates.emptyReleases": "No release information; click Check for updates",
+  "app.title": "CodeBuddy · Management Console",
   "app.skip": "Skip to content",
   "app.workspace": "Workspace",
   "app.primaryNav": "Primary navigation",
@@ -1843,6 +1846,7 @@ const en: Record<MessageKey, string> = {
   "nav.settings": "Settings",
   "nav.updates": "Updates",
   "login.subtitle": "Gateway management",
+  "login.pageTitle": "Sign In",
   "login.title": "Sign in to the console",
   "login.username": "Username",
   "login.password": "Password",
@@ -3425,6 +3429,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   currentLang = lang;
   useEffect(() => {
     document.documentElement.lang = lang === "en" ? "en" : "zh-CN";
+    if (
+      !document.title ||
+      document.title === "CodeBuddy" ||
+      document.title.includes("管理控制台") ||
+      document.title.includes("Management Console")
+    ) {
+      document.title = lang === "en" ? "CodeBuddy · Management Console" : "CodeBuddy · 管理控制台";
+    }
   }, [lang]);
   useEffect(() => {
     const apply = (event: Event) => {

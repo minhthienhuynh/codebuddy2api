@@ -260,6 +260,7 @@ const profileKeys: Record<string, string> = {
 export function profileLabel(value: string) {
   const k = Object.hasOwn(profileKeys, value) ? profileKeys[value] : undefined;
   if (k) return translate(k);
+  if (currentLanguage() === "en") return value.replaceAll("_", " ");
   return ownLabel(profiles, value) ?? value;
 }
 function statusLabel(val: string): string {
