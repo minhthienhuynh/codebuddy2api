@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { create } from "zustand";
 import { api, object } from "./api";
 import { Drawer, DrawerPresence, Icon } from "./components";
-import { chooseLanguage, languagePreference, useT, type LangPref, t } from "./i18n";
+import { chooseLanguage, languagePreference, useT, type LangPref } from "./i18n";
 import s from "./ui.module.scss";
 import "./theme.scss";
 
@@ -108,6 +108,7 @@ export function LanguageToggle() {
   );
 }
 export function Appearance() {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const { mode, palette, dark, persisted } = useAppearance();
   useEffect(initializeAppearance, []);

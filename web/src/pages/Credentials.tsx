@@ -48,7 +48,7 @@ import {
 import { downloadFilename } from "../downloads";
 import s from "../ui.module.scss";
 import { SearchInput, Select } from "../fields";
-import { t as translate, formatDate } from "../i18n";
+import { t as translate, formatDate, currentLanguage } from "../i18n";
 import { popoverHost, usePopover } from "../popover";
 import { clearToasts, notify } from "../toast";
 
@@ -92,12 +92,14 @@ function lastErrorLabel(value: unknown) {
   const key = text(value);
   const k = lastErrorKeyMap[key];
   if (k) return translate(k);
+  if (currentLanguage() === "en") return key.replaceAll("_", " ");
   return lastErrorLabels[key] ?? key;
 }
 function healthLabel(value: unknown) {
   const key = text(value);
   const k = healthKeyMap[key];
   if (k) return translate(k);
+  if (currentLanguage() === "en") return key.replaceAll("_", " ");
   return healthLabels[key] ?? key;
 }
 

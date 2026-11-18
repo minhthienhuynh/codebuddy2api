@@ -43,6 +43,38 @@ describe("i18n", () => {
     expect(screen.getByTestId("probe").textContent).toBe("Overview");
     expect(localStorage.getItem("codebuddy2api.lang")).toBe("system");
   });
+  it("syncs document title and html lang attribute dynamically with language changes", () => {
+    document.title = "";
+    render(
+      <LanguageProvider>
+        <ProbeText />
+      </LanguageProvider>,
+    );
+    expect(document.documentElement.lang).toBe("en");
+    expect(document.title).toBe("CodeBuddy · Management Console");
+
+    act(() => chooseLanguage("zh"));
+    expect(document.documentElement.lang).toBe("zh-CN");
+    expect(document.title).toBe("CodeBuddy · 管理控制台");
+
+    act(() => chooseLanguage("en"));
+    expect(document.documentElement.lang).toBe("en");
+    expect(document.title).toBe("CodeBuddy · Management Console");
+    act(() => chooseLanguage("system"));
+  });
+  it("localizes appearance drawer button title reactively", async () => {
+    const { Appearance } = await import("./appearance");
+    render(
+      <LanguageProvider>
+        <Appearance />
+      </LanguageProvider>,
+    );
+    act(() => chooseLanguage("zh"));
+    expect(screen.getByRole("button", { name: "外观设置" })).toBeTruthy();
+    act(() => chooseLanguage("en"));
+    expect(screen.getByRole("button", { name: "Appearance Settings" })).toBeTruthy();
+    act(() => chooseLanguage("system"));
+  });
   it("falls back to the key itself when an entry is missing", () => {
     expect(translate("missing.key.entirely")).toBe("missing.key.entirely");
   });
