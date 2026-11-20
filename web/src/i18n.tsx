@@ -3515,8 +3515,30 @@ const backendMessageMap: Record<string, string> = {
   今日已签到: "Already checked in today",
   签到成功: "Check-in succeeded",
   活动未开始: "Activity not started",
+  签到活动未开放或已结束: "Check-in activity not available or has ended",
   签到活动未开放: "Check-in activity not available",
+  当前账号不具备签到资格: "Current account is not eligible for check-in",
+  "活动状态未确认，未尝试领取": "Activity status unconfirmed; claim not attempted",
+  "签到未确认成功，请核验账号状态": "Check-in not confirmed; please verify account status",
+  "自动签到设置或凭证已变化，已取消未发送的领取":
+    "Auto check-in settings or credential changed; unsent claim cancelled",
+  "凭证已变化，结果未写入，请刷新核验":
+    "Credential changed; result not saved, please refresh and verify",
+  尚未查询签到活动: "Check-in activity not yet queried",
   当前活动不可参与: "Current activity not eligible",
+
+  // Credentials & Maintenance
+  账号已人工停用: "Account manually disabled",
+  已清除该账号的冷却: "Cooldown cleared for this account",
+  该账号当前没有冷却: "No active cooldown for this account",
+  "内存冷却已清除，但写入失败，重启后可能恢复；请稍后重试":
+    "Memory cooldown cleared but failed to write to disk, may restore after restart; please retry later",
+  "凭证身份已变化，请刷新列表": "Credential identity changed, please refresh the list",
+  "凭证已变化，打卡结果未确认，请刷新列表核验":
+    "Credential changed; daily chat outcome unconfirmed, please refresh and verify",
+  "凭证已变化，请刷新列表核验": "Credential changed, please refresh the list to verify",
+  "凭证已变化，旅行结果未写入，请刷新核验":
+    "Credential changed; travel outcome not saved, please refresh and verify",
 
   // Travel & Buddy
   旅行中: "Traveling",
