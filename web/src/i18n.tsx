@@ -3502,6 +3502,7 @@ export function formatDate(date: Date | number, options?: Intl.DateTimeFormatOpt
 
 const backendMessageMap: Record<string, string> = {
   // Check-in
+  "签到成功，余额可另行同步": "Check-in succeeded; balance can be synced separately",
   今日已签到: "Already checked in today",
   签到成功: "Check-in succeeded",
   活动未开始: "Activity not started",
@@ -3512,6 +3513,9 @@ const backendMessageMap: Record<string, string> = {
   "Buddy 空闲": "Buddy idle",
   "Buddy 旅行中": "Buddy traveling",
   "Buddy 已到达，待领取": "Buddy arrived, reward pending",
+  "Buddy 已派出，余额可另行同步": "Buddy dispatched; balance can be synced separately",
+  "当前账号没有可用且倍率已知的模型，请同步余额和目录后重试":
+    "No available models with known rate for this account; please sync balance and catalog then retry",
   今日派遣已达上限: "Daily dispatch limit reached",
   "Buddy 旅行中，无需派遣": "Buddy traveling, dispatch not needed",
   "企业账号不参与成长中心，无法旅行":
@@ -3567,10 +3571,26 @@ const backendMessageMap: Record<string, string> = {
 
   // Trial
   可手动申请: "Available for manual claim",
+  "体验积分已领取，可另行同步余额": "Trial credits claimed; balance can be synced separately",
   体验积分已领取: "Trial credits already claimed",
   "领取成功，请同步余额": "Claim successful, please sync balance",
   "官方请求已结束，但领取记录保存失败；请先核对余额，不要删除记录或立即重试":
     "Official request completed but claim record save failed; verify balance first",
+  "领取记录无法读取或保存，已停止操作；请检查凭证目录权限和磁盘空间":
+    "Claim record cannot be read/saved; check credentials directory permissions and disk space",
+
+  // Sync Balance & Catalog
+  "余额、目录和用量已同步": "Balance, catalog, and usage synced",
+  "同步不完整，保留上次成功数据": "Sync incomplete, retaining last successful data",
+  "模型目录正在同步，请稍后重试": "Model catalog is syncing, please retry later",
+  "模型目录正在变化，请稍后重试": "Model catalog is changing, please retry later",
+  没有账号目录提供该模型: "No account catalog provides this model",
+  目录尚未就绪: "Catalog not ready",
+  账号自身目录不支持模型: "Account catalog does not support model",
+  企业配额查询失败: "Enterprise quota query failed",
+  "企业账号缺少企业 ID，无法查询企业配额（已跳过个人版接口以避免误报余额）":
+    "Enterprise account missing enterprise ID; cannot query quota (skipped personal endpoint to prevent misreporting)",
+  积分响应与凭据站点不一致: "Credit response site mismatch with credential site",
 
   // Quota package names
   个人版订阅套餐: "Personal Subscription Plan",

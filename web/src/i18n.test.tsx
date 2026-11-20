@@ -130,6 +130,19 @@ describe("localizeMessage", () => {
     );
     expect(localizeMessage("个人版订阅套餐")).toBe("Personal Subscription Plan");
     expect(localizeMessage("同意已保存；Buddy 空闲")).toBe("Consent saved; Buddy idle");
+    expect(localizeMessage("余额、目录和用量已同步")).toBe("Balance, catalog, and usage synced");
+    expect(localizeMessage("同步不完整，保留上次成功数据")).toBe(
+      "Sync incomplete, retaining last successful data",
+    );
+    expect(localizeMessage("签到成功，余额可另行同步")).toBe(
+      "Check-in succeeded; balance can be synced separately",
+    );
+    expect(localizeMessage("Buddy 已派出，余额可另行同步")).toBe(
+      "Buddy dispatched; balance can be synced separately",
+    );
+    expect(localizeMessage("体验积分已领取，可另行同步余额")).toBe(
+      "Trial credits claimed; balance can be synced separately",
+    );
 
     act(() => chooseLanguage("zh"));
     expect(localizeMessage("今日已签到")).toBe("今日已签到");
