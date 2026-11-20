@@ -136,7 +136,9 @@ export function CreditsPanel({ credential, now }: { credential: Credential; now:
           {syncError && (
             <div className={s.warning} role="status">
               <Icon name="alert" />
-              <div>{translate("credits.panel.syncFailed", { error: syncError ?? "" })}</div>
+              <div>
+                {translate("credits.panel.syncFailed", { error: localizeMessage(syncError) })}
+              </div>
             </div>
           )}
           <Empty title={translate("credits.panel.emptyTitle")}>
@@ -151,8 +153,11 @@ export function CreditsPanel({ credential, now }: { credential: Credential; now:
   const notices = [
     syncError
       ? age
-        ? translate("credits.panel.syncFailedWithSnapshot", { error: syncError, age })
-        : translate("credits.panel.syncFailed", { error: syncError })
+        ? translate("credits.panel.syncFailedWithSnapshot", {
+            error: localizeMessage(syncError),
+            age,
+          })
+        : translate("credits.panel.syncFailed", { error: localizeMessage(syncError) })
       : b.stale && age
         ? translate("credits.panel.snapshotAge", { age })
         : null,
