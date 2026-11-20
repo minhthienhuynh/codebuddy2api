@@ -143,10 +143,32 @@ describe("localizeMessage", () => {
     expect(localizeMessage("体验积分已领取，可另行同步余额")).toBe(
       "Trial credits claimed; balance can be synced separately",
     );
+    expect(localizeMessage("程序目录不可写，无法自动更新")).toBe(
+      "Program directory is not writable, cannot self-update",
+    );
+    expect(localizeMessage("GitHub API 访问频率受限，请稍后重试")).toBe(
+      "GitHub API rate limit exceeded, please retry later",
+    );
+    expect(localizeMessage("已有更新任务正在进行")).toBe("An update task is already in progress");
+    expect(localizeMessage("超时")).toBe("Timeout");
+    expect(localizeMessage("无法连接")).toBe("Connection failed");
+    expect(localizeMessage("返回的不是发布包")).toBe("Not a release archive");
 
     act(() => chooseLanguage("zh"));
     expect(localizeMessage("今日已签到")).toBe("今日已签到");
     expect(localizeMessage("Buddy 空闲")).toBe("Buddy 空闲");
+    act(() => chooseLanguage("system"));
+  });
+});
+
+describe("formatDate", () => {
+  it("formats dates with locale-sensitive rules", async () => {
+    const { formatDate } = await import("./i18n");
+    const timestamp = 1792497600;
+    act(() => chooseLanguage("en"));
+    expect(formatDate(timestamp)).toBeTruthy();
+    act(() => chooseLanguage("zh"));
+    expect(formatDate(timestamp)).toBeTruthy();
     act(() => chooseLanguage("system"));
   });
 });

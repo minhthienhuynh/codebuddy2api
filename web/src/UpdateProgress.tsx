@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, object } from "./api";
 import { ErrorNotice } from "./components";
-import { useT } from "./i18n";
+import { localizeMessage, useT } from "./i18n";
 import s from "./ui.module.scss";
 
 export type UpdateJob = {
@@ -71,7 +71,11 @@ export function UpdateProgress({ job }: { job: UpdateJob }) {
   const restarting = job.status === "restarting";
   const phase = useRestartWatch(restarting ? job.target : null);
   if (job.status === "failed")
-    return <ErrorNotice message={t("updates.failed", { message: job.message ?? "—" })} />;
+    return (
+      <ErrorNotice
+        message={t("updates.failed", { message: localizeMessage(job.message) || "—" })}
+      />
+    );
   if (job.status !== "running" && !restarting) return null;
   const tag = `v${job.target ?? ""}`;
   const index = Math.max(0, UPDATE_STEPS.indexOf(job.step ?? "download"));

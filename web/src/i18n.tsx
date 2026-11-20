@@ -3599,6 +3599,52 @@ const backendMessageMap: Record<string, string> = {
   旅行奖励: "Travel Reward",
   活动奖励: "Event Reward",
   企业配额: "Enterprise Quota",
+
+  // Self-update & Version Checks
+  "程序目录不可写，无法自动更新": "Program directory is not writable, cannot self-update",
+  "当前进程未通过 serve 启动，无法自动重启":
+    "Current process was not launched via serve, cannot automatically restart",
+  "GitHub API 访问频率受限，请稍后重试": "GitHub API rate limit exceeded, please retry later",
+  "无法连接 GitHub，请检查网络或代理设置（HTTPS_PROXY）":
+    "Cannot connect to GitHub; check network or proxy settings (HTTPS_PROXY)",
+  "检查更新失败（HTTP ": "Failed to check for updates (HTTP ",
+  响应超过大小限制: "Response exceeds size limit",
+
+  // Installation & Rollback
+  已有更新任务正在进行: "An update task is already in progress",
+  "未找到该版本，请先检查更新": "Version not found; please check for updates first",
+  已经是该版本: "Already on this version",
+  该版本缺少发布包或校验文件: "Version is missing release archive or checksum file",
+  "通过镜像下载需要 GitHub 提供的文件摘要；该版本没有摘要，请切换为直连":
+    "Mirror download requires checksum from GitHub; this version has no checksum, please switch to direct",
+  "下载发布包失败，已尝试全部下载源": "Failed to download release archive across all sources",
+  下载发布包失败: "Failed to download release archive",
+  发布包校验失败: "Release archive checksum verification failed",
+  发布包超过大小限制: "Release archive exceeds size limit",
+  发布包内容超过限制: "Release archive content exceeds limit",
+  发布包结构异常: "Release archive structure anomaly",
+  发布包包含不安全的路径: "Release archive contains unsafe paths",
+  发布包缺少必要文件或版本不符: "Release archive missing required files or version mismatch",
+  "无法读取 Git 工作区中的未跟踪文件，已中止更新":
+    "Cannot read untracked files in Git working directory; update aborted",
+  "数据目录位于将被替换的程序目录中，无法自动更新":
+    "Data directory is located inside the application directory being replaced; cannot self-update",
+  "依赖安装失败：无法运行安装程序或已超时":
+    "Dependency installation failed: cannot run installer or timed out",
+  "依赖安装失败：": "Dependency installation failed: ",
+  "替换程序文件失败且未能完全回滚，请使用备份手动恢复":
+    "Replacing program files failed and could not fully roll back; please restore from backup manually",
+  "替换程序文件失败，已回滚到当前版本":
+    "Replacing program files failed; rolled back to current version",
+  "目标版本无法读取当前的 ": "Target version cannot read current ",
+  "更新失败：": "Update failed: ",
+
+  // Mirror Probes
+  超时: "Timeout",
+  无法连接: "Connection failed",
+  返回的不是发布包: "Not a release archive",
+  "没有可用于测速的发布包，请先检查更新":
+    "No release archive available for speed test; please check for updates first",
 };
 
 export function localizeMessage(message: unknown): string {
