@@ -2,6 +2,7 @@ import axios from "axios";
 import { installPublicDemoAdapter } from "./publicDemo";
 import { create } from "zustand";
 import { useCallback, useEffect, useState } from "react";
+import { t, currentLanguage } from "./i18n";
 
 export type RecordValue = Record<string, unknown>;
 export type Session = { authenticated: boolean; csrf_token: string | null; bootstrap?: boolean };
@@ -33,14 +34,16 @@ api.interceptors.response.use(
     return Promise.reject(error);
   },
 );
-export function object(value: unknown, context = "响应"): RecordValue {
+export function object(value: unknown, context?: string): RecordValue {
+  const ctx = context ?? (currentLanguage() === "en" ? "Response" : "响应");
   if (typeof value !== "object" || value === null || Array.isArray(value))
-    throw new Error(`${context}格式不符合接口契约`);
+    throw new Error(t("api.error.contractViolation", { context: ctx }));
   return value as RecordValue;
 }
-export function list(value: unknown, context = "列表"): RecordValue[] {
-  if (!Array.isArray(value)) throw new Error(`${context}缺失或格式错误`);
-  return value.map((item) => object(item, context));
+export function list(value: unknown, context?: string): RecordValue[] {
+  const ctx = context ?? (currentLanguage() === "en" ? "List" : "列表");
+  if (!Array.isArray(value)) throw new Error(t("api.error.missingOrInvalid", { context: ctx }));
+  return value.map((item) => object(item, ctx));
 }
 export function text(value: unknown): string {
   if (value === undefined || value === null) return "—";
@@ -92,13 +95,15 @@ export function errorMessage(error: unknown): string {
         "models" in body.detail
       ) {
         const models = body.detail.models;
-        return `凭证仍被模型规则引用，请先解除绑定：${Array.isArray(models) ? models.map(text).join("、") : text(models)}`;
+        const joined = Array.isArray(models)
+          ? models.map(text).join(currentLanguage() === "en" ? ", " : "、")
+          : text(models);
+        return t("api.error.boundModels", { models: joined });
       }
-      return "保存冲突：配置已被其他操作更新。请关闭编辑并刷新后重新修改。";
+      return t("api.error.conflict");
     }
-    if (error.response?.status === 401) return "会话已失效，请重新登录。";
-    if (error.response?.status === 403)
-      return serverMessage ?? "操作被拒绝：请检查管理锁定或重新登录刷新 CSRF。";
+    if (error.response?.status === 401) return t("api.error.sessionExpired");
+    if (error.response?.status === 403) return serverMessage ?? t("api.error.operationRejected");
     if (serverMessage) return serverMessage;
     const data: unknown = error.response?.data;
     if (data && typeof data === "object" && "detail" in data) {
@@ -123,10 +128,10 @@ export function errorMessage(error: unknown): string {
       }
     }
     return error.response
-      ? `请求失败（HTTP ${error.response.status}），请检查服务状态。`
-      : "无法连接管理 API，请检查网络或服务状态后重试。";
+      ? t("api.error.httpStatus", { status: error.response.status })
+      : t("api.error.network");
   }
-  return error instanceof Error ? error.message : "操作失败，请重试。";
+  return error instanceof Error ? error.message : t("api.error.failed");
 }
 export async function establishSession(credentials?: {
   username: string;

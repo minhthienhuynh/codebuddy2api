@@ -48,7 +48,7 @@ import {
 import { downloadFilename } from "../downloads";
 import s from "../ui.module.scss";
 import { SearchInput, Select } from "../fields";
-import { t as translate, formatDate, currentLanguage } from "../i18n";
+import { t as translate, formatDate, currentLanguage, localizeMessage } from "../i18n";
 import { popoverHost, usePopover } from "../popover";
 import { clearToasts, notify } from "../toast";
 
@@ -233,7 +233,7 @@ function ImportDrawer({ onClose, onDone }: { onClose: () => void; onDone: () => 
         });
         const server = list(object(response.data).results).map((item) => {
           if (typeof item.name !== "string" || typeof item.ok !== "boolean")
-            throw new Error("导入结果缺少 name / ok");
+            throw new Error(translate("credentials.error.missingNameOk"));
           return {
             name: item.name,
             ok: item.ok,
@@ -259,7 +259,7 @@ function ImportDrawer({ onClose, onDone }: { onClose: () => void; onDone: () => 
       .then((response) => {
         const server = list(object(response.data).results).map((item) => {
           if (typeof item.name !== "string" || typeof item.ok !== "boolean")
-            throw new Error("导入结果缺少 name / ok");
+            throw new Error(translate("credentials.error.missingNameOk"));
           return {
             name: item.name,
             ok: item.ok,
@@ -463,7 +463,7 @@ function notifyMaintenance(title: string, results: Record<string, unknown>[]) {
               <li key={i}>
                 <strong>{text(r.name)}</strong>
                 <Badge tone={complete ? "good" : "warn"}>{label}</Badge>
-                <span>{text(r.message)}</span>
+                <span>{localizeMessage(text(r.message))}</span>
                 <TravelSummary
                   trip={
                     r.travel && typeof r.travel === "object"
@@ -625,17 +625,19 @@ export function Credentials() {
     void api
       .post(path, undefined, { timeout: 300000 })
       .then(({ data }) => {
-        const results = list(object(data).results, "凭证操作结果");
+        const results = list(object(data).results, translate("credentials.error.resultsContext"));
         if (
           !results.length ||
           results.some((r) => typeof r.ok !== "boolean" || typeof r.message !== "string")
         )
-          throw new Error("未收到完整操作结果，请刷新列表核验，勿直接重复执行");
-        for (const r of results) if (r.travel !== undefined) object(r.travel, "旅行操作结果");
+          throw new Error(translate("credentials.error.incompleteBatch"));
+        for (const r of results)
+          if (r.travel !== undefined)
+            object(r.travel, translate("credentials.error.travelContext"));
         notifyMaintenance(title, results);
         if (action === "travel" && credential) {
           if (results.length !== 1 || results[0].id !== credential.id)
-            throw new Error("旅行账号或结果未确认，请刷新列表核验");
+            throw new Error(translate("credentials.error.travelUnconfirmed"));
           if (results[0].buddy_confirmation !== undefined)
             setBuddyTarget({
               credential,
@@ -644,9 +646,10 @@ export function Credentials() {
             });
         }
       })
-      .catch((err: unknown) =>
-        setError(`${errorMessage(err)}；请求失败不代表后台已停止，请刷新列表核验。`),
-      )
+      .catch((err: unknown) => {
+        const sep = currentLanguage() === "en" ? "; " : "；";
+        setError(`${errorMessage(err)}${sep}${translate("credentials.error.batchFailedNote")}`);
+      })
       .finally(() => {
         setBusy(false);
         setRunning(null);
@@ -681,7 +684,7 @@ export function Credentials() {
       });
       const saved = object(response.data);
       if (saved.id !== credential.id || saved.enabled !== true || !Number.isInteger(saved.revision))
-        throw new Error("限制解除结果未确认，请刷新列表核验");
+        throw new Error(translate("credentials.error.restrictionUnconfirmed"));
       notify({
         key: "restriction",
         tone: "good",
@@ -705,7 +708,7 @@ export function Credentials() {
         saved[field] !== enabled ||
         !Number.isInteger(saved.revision)
       )
-        throw new Error("设置保存结果未确认，请刷新列表核验");
+        throw new Error(translate("credentials.error.settingsUnconfirmed"));
       const label =
         field === "auto_checkin"
           ? translate("values.auto_checkin")
@@ -1021,7 +1024,11 @@ export function Credentials() {
           <LastErrorJson code={c.last_error_code} at={c.last_failure_at} body={c.last_error_body} />
         )}
         {typeof c.sync_error === "string" && c.sync_error !== "" && (
-          <small>{translate("credentials.card.failReason", { error: text(c.sync_error) })}</small>
+          <small>
+            {translate("credentials.card.failReason", {
+              error: localizeMessage(text(c.sync_error)),
+            })}
+          </small>
         )}
         {c.travel_supported === true && trip && <TravelSummary trip={trip} />}
       </>
@@ -1120,7 +1127,9 @@ export function Credentials() {
           <small>
             {translate("credentials.card.lastCheckin", {
               date: checkin?.date ? ` (${text(checkin.date)})` : "",
-              msg: checkin ? text(checkin.message) : translate("credentials.card.notQueried"),
+              msg: checkin
+                ? localizeMessage(text(checkin.message))
+                : translate("credentials.card.notQueried"),
             })}
           </small>
         </div>
@@ -1139,7 +1148,9 @@ export function Credentials() {
           <small>
             {c.travel_supported === true
               ? trip
-                ? translate("credentials.lastTripWithMsg", { msg: text(trip.message) })
+                ? translate("credentials.lastTripWithMsg", {
+                    msg: localizeMessage(text(trip.message)),
+                  })
                 : translate("credentials.notQueried")
               : isEnterprise(c)
                 ? translate("credentials.enterpriseNoTravel")
@@ -1163,7 +1174,9 @@ export function Credentials() {
           <small>
             {c.daily_chat_supported === true
               ? dailyChat
-                ? translate("credentials.dailyChatWithMsg", { msg: text(dailyChat.message) })
+                ? translate("credentials.dailyChatWithMsg", {
+                    msg: localizeMessage(text(dailyChat.message)),
+                  })
                 : translate("credentials.notExecuted")
               : translate("credentials.dailyChatIntlOnly")}
           </small>
@@ -1178,7 +1191,9 @@ export function Credentials() {
         {c.enabled === false && <small>{translate("credentials.card.disabledTaskHint")}</small>}
         {c.trial_supported === true && c.trial != null && (
           <small>
-            {translate("credentials.card.trialMsg", { msg: text(object(c.trial).message) })}
+            {translate("credentials.card.trialMsg", {
+              msg: localizeMessage(text(object(c.trial).message)),
+            })}
           </small>
         )}
         {c.growth_supported === true && (
@@ -1802,7 +1817,9 @@ export function Credentials() {
                       <span>{translate("credentials.card.boundModelRules")}</span>
                       <strong>
                         {Array.isArray(liveDetail.bindings) && liveDetail.bindings.length
-                          ? liveDetail.bindings.map(text).join("、")
+                          ? liveDetail.bindings
+                              .map(text)
+                              .join(currentLanguage() === "en" ? ", " : "、")
                           : translate("credentials.card.noExclusiveBinding")}
                       </strong>
                     </div>
@@ -1889,10 +1906,11 @@ export function Credentials() {
                     { responseType: "blob" },
                   )
                   .then((response) => {
-                    if (!response.data.size) throw new Error("导出响应为空");
+                    if (!response.data.size)
+                      throw new Error(translate("credentials.error.exportEmpty"));
                     const type = String(response.headers["content-type"] ?? "");
                     if (type.includes("json") || type.includes("html"))
-                      throw new Error("导出响应不是凭证附件");
+                      throw new Error(translate("credentials.error.exportNotAttachment"));
                     const url = URL.createObjectURL(response.data);
                     const link = document.createElement("a");
                     link.href = url;
