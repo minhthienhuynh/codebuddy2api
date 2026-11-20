@@ -658,8 +658,10 @@ const zh = {
   "api.error.boundModels": "凭证仍被模型规则引用，请先解除绑定：{models}",
   "api.error.conflict": "保存冲突：配置已被其他操作更新。请关闭编辑并刷新后重新修改。",
   "api.error.contractViolation": "{context}格式不符合接口契约",
+  "api.error.failed": "操作失败，请重试。",
   "api.error.httpStatus": "请求失败（HTTP {status}），请检查服务状态。",
   "api.error.missingOrInvalid": "{context}缺失或格式错误",
+  "api.error.network": "无法连接管理 API，请检查网络或服务状态后重试。",
   "api.error.operationRejected": "操作被拒绝：请检查管理锁定或重新登录刷新 CSRF。",
   "api.error.sessionExpired": "会话已失效，请重新登录。",
   "appearance.darkFixedNote": "深色使用固定配色；浅色偏好会保留，切回浅色后生效。",
@@ -906,6 +908,16 @@ const zh = {
   "credentials.view.card": "卡片视图",
   "credentials.view.list": "列表视图",
   "credentials.waitingList": "等待凭证列表",
+  "credentials.error.batchFailedNote": "请求失败不代表后台已停止，请刷新列表核验。",
+  "credentials.error.exportEmpty": "导出响应为空",
+  "credentials.error.exportNotAttachment": "导出响应不是凭证附件",
+  "credentials.error.incompleteBatch": "未收到完整操作结果，请刷新列表核验，勿直接重复执行",
+  "credentials.error.missingNameOk": "导入结果缺少 name / ok",
+  "credentials.error.restrictionUnconfirmed": "限制解除结果未确认，请刷新列表核验",
+  "credentials.error.resultsContext": "凭证操作结果",
+  "credentials.error.settingsUnconfirmed": "设置保存结果未确认，请刷新列表核验",
+  "credentials.error.travelContext": "旅行操作结果",
+  "credentials.error.travelUnconfirmed": "旅行账号或结果未确认，请刷新列表核验",
   "credits.category.activity": "活动奖励",
   "credits.category.enterprise": "企业配额",
   "credits.category.other": "其他额度",
@@ -963,8 +975,10 @@ const zh = {
   "imports.error.nestedOrNonInfo": "不支持嵌套路径或非 .info 文件",
   "imports.error.safeInfoOnly": "只允许 ZIP 根目录中的安全 .info 文件名",
   "imports.error.sizeLimit": "压缩文件及上传总大小不可超过 32 MiB",
+  "imports.error.singleLimit": "单文件超过 1 MiB",
   "imports.error.unzipLimit": "解压超限：单项最多 1 MiB，批量最多 32 MiB",
   "imports.error.utf8": "文件不是有效 UTF-8",
+  "imports.error.noFiles": "ZIP 中没有可导入文件",
   "jobs.preparing": "正在准备…",
   "jobs.running": "正在{step}",
   "modelMeta.fields.canDisableThinking": "允许关闭思考",
@@ -1383,6 +1397,7 @@ const zh = {
   "tasks.oauth.stoppedQuery": "已停止查询。",
   "tasks.oauth.title": "OAuth 添加凭证",
   "tasks.oauth.untrustedLink": "服务返回了不在官方白名单中的 OAuth 链接",
+  "tasks.oauth.missingLoginId": "OAuth 响应缺少 login_id",
   "tasks.oauth.waitingAuth": "等待官方授权完成…",
   "tasks.travel.arrivedNotice": "预计已到达，请查询核验",
   "tasks.travel.autoAcceptEnabled": "首次领猫预授权：已开启",
@@ -2329,8 +2344,11 @@ const en: Record<MessageKey, string> = {
   "api.error.conflict":
     "Conflict: configuration updated by another operation. Please close editor, refresh and retry.",
   "api.error.contractViolation": "{context} format violates API contract",
+  "api.error.failed": "Operation failed, please try again.",
   "api.error.httpStatus": "Request failed (HTTP {status}), please check service status.",
   "api.error.missingOrInvalid": "{context} missing or invalid format",
+  "api.error.network":
+    "Unable to reach management API. Please check network or service status and try again.",
   "api.error.operationRejected":
     "Operation rejected: check admin lock or re-login to refresh CSRF.",
   "api.error.sessionExpired": "Session expired, please log in again.",
@@ -2585,6 +2603,21 @@ const en: Record<MessageKey, string> = {
   "credentials.view.card": "Card View",
   "credentials.view.list": "List View",
   "credentials.waitingList": "Waiting for credential list",
+  "credentials.error.batchFailedNote":
+    "Request failed, but background tasks may still be running. Refresh the list to verify.",
+  "credentials.error.exportEmpty": "Export response is empty",
+  "credentials.error.exportNotAttachment": "Export response is not a credential attachment",
+  "credentials.error.incompleteBatch":
+    "Incomplete operation results received. Refresh the list to verify before retrying.",
+  "credentials.error.missingNameOk": "Import result is missing name / ok",
+  "credentials.error.restrictionUnconfirmed":
+    "Restriction lift result not confirmed. Refresh the list to verify.",
+  "credentials.error.resultsContext": "credential operation results",
+  "credentials.error.settingsUnconfirmed":
+    "Settings save result not confirmed. Refresh the list to verify.",
+  "credentials.error.travelContext": "travel operation results",
+  "credentials.error.travelUnconfirmed":
+    "Travel account or result not confirmed. Refresh the list to verify.",
   "credits.category.activity": "Event Reward",
   "credits.category.enterprise": "Enterprise Quota",
   "credits.category.other": "Other Quota",
@@ -2644,8 +2677,10 @@ const en: Record<MessageKey, string> = {
   "imports.error.nestedOrNonInfo": "Nested paths or non-.info files not supported",
   "imports.error.safeInfoOnly": "Only safe .info filenames in ZIP root allowed",
   "imports.error.sizeLimit": "ZIP and total upload size must not exceed 32 MiB",
+  "imports.error.singleLimit": "Single file exceeds 1 MiB",
   "imports.error.unzipLimit": "Unpack exceeded: max 1 MiB per item, 32 MiB total",
   "imports.error.utf8": "File is not valid UTF-8",
+  "imports.error.noFiles": "No importable files found in ZIP",
   "jobs.preparing": "Preparing…",
   "jobs.running": "{step} in progress",
   "modelMeta.fields.canDisableThinking": "Allows Disabling Thinking",
@@ -3076,6 +3111,7 @@ const en: Record<MessageKey, string> = {
   "tasks.oauth.stoppedQuery": "Query stopped.",
   "tasks.oauth.title": "Add Credential via OAuth",
   "tasks.oauth.untrustedLink": "Service returned an OAuth URL not on the official whitelist",
+  "tasks.oauth.missingLoginId": "OAuth response missing login_id",
   "tasks.oauth.waitingAuth": "Waiting for official authorization to complete...",
   "tasks.travel.arrivedNotice": "Expected arrived, please query to verify",
   "tasks.travel.autoAcceptEnabled": "First claim auto-authorization: Enabled",
@@ -3462,4 +3498,165 @@ export function formatDate(date: Date | number, options?: Intl.DateTimeFormatOpt
   const d = typeof date === "number" ? new Date(date > 1e11 ? date : date * 1000) : date;
   if (Number.isNaN(d.valueOf())) return translate("values.invalidDate");
   return d.toLocaleString(currentLang === "en" ? "en-US" : "zh-CN", options);
+}
+
+const backendMessageMap: Record<string, string> = {
+  // Check-in
+  "签到成功，余额可另行同步": "Check-in succeeded; balance can be synced separately",
+  今日已签到: "Already checked in today",
+  签到成功: "Check-in succeeded",
+  活动未开始: "Activity not started",
+  签到活动未开放: "Check-in activity not available",
+  当前活动不可参与: "Current activity not eligible",
+
+  // Travel & Buddy
+  "Buddy 空闲": "Buddy idle",
+  "Buddy 旅行中": "Buddy traveling",
+  "Buddy 已到达，待领取": "Buddy arrived, reward pending",
+  "Buddy 已派出，余额可另行同步": "Buddy dispatched; balance can be synced separately",
+  "当前账号没有可用且倍率已知的模型，请同步余额和目录后重试":
+    "No available models with known rate for this account; please sync balance and catalog then retry",
+  今日派遣已达上限: "Daily dispatch limit reached",
+  "Buddy 旅行中，无需派遣": "Buddy traveling, dispatch not needed",
+  "企业账号不参与成长中心，无法旅行":
+    "Enterprise accounts do not participate in Growth Center; travel unavailable",
+  "当前账号不参与成长中心，无法旅行":
+    "Account does not participate in Growth Center; travel unavailable",
+  旅行仅适用于国内账号: "Travel is only available for domestic accounts",
+  "旅行积分已领取；": "Travel credits claimed; ",
+  旅行积分已领取: "Travel credits claimed",
+  "领取已确认，但状态尚未更新，未派出":
+    "Claim confirmed, but status not updated; dispatch withheld",
+  "派遣已确认，但状态仍为空闲；请先查询核验，勿重复派出":
+    "Dispatch confirmed, but state remains idle; please verify status first",
+  "设置或凭证已变化，未发送派遣请求": "Settings or credentials changed; dispatch request not sent",
+  "设置或凭证已变化，未发送领取请求": "Settings or credentials changed; claim request not sent",
+  "设置或凭证已变化，未执行旅行操作":
+    "Settings or credentials changed; travel operation not executed",
+  "猫猫已领取，旅行状态已变化，请先查询核验":
+    "Pet claimed, travel state changed; please verify status first",
+  "猫猫已领取，但派遣审计无法保存，未发送派遣请求":
+    "Pet claimed, but audit failed to save; dispatch request not sent",
+  "派遣已确认，但审计无法保存，请查询最新状态，勿重复派遣":
+    "Dispatch confirmed, but audit failed to save; verify status before retrying",
+  "旅行状态查询失败，未执行写操作": "Travel status query failed, no write operations executed",
+  "领取结果未确认，未派出；下次先查询状态":
+    "Claim result unconfirmed, not dispatched; query status first next time",
+  "同意已保存；": "Consent saved; ",
+
+  // Daily Chat
+  "今日打卡已确认，活跃奖励由官方次日结算":
+    "Active check-in confirmed; reward settled by official next day",
+  "今日尚未打卡，可手动向官方申请每日活跃奖励":
+    "Not yet checked in today; you can manually request daily reward",
+  "上次打卡结果尚未确认，可能仍在执行；今日不重复发送":
+    "Previous check-in unconfirmed, may still be running; skipping today",
+  "打卡未确认成功，今日不重试；请查询会话状态或检查日志":
+    "Check-in unconfirmed, will not retry today; inspect session or logs",
+  "活跃打卡仅适用于国际 WorkBuddy 账号，国内账号及国际 CodeBuddy 不适用":
+    "Active check-in only applies to international WorkBuddy accounts",
+  "官方沙箱未在限定时间内就绪，未向会话发送任何内容；今日可重试":
+    "Official sandbox timed out before ready; nothing sent; retryable today",
+  "官方沙箱仍在创建中，未向会话发送任何内容；今日可重试":
+    "Official sandbox still provisioning; nothing sent; retryable today",
+  "连接官方失败或响应中断，今日不重试；请检查服务器网络、DNS 和代理":
+    "Connection to official upstream failed or interrupted; will not retry today",
+  "官方返回了错误状态，未确认打卡成功，今日不重试":
+    "Official returned error status, check-in unconfirmed; will not retry today",
+  "官方响应格式无效，未确认打卡成功": "Official response format invalid, check-in unconfirmed",
+  "打卡记录无法读取或保存，已停止操作；请检查数据目录权限和磁盘空间":
+    "Check-in record cannot be read/saved; check disk space and permissions",
+  "凭证身份、代次或启用状态已变化，已停止后续操作，请刷新列表核对":
+    "Credentials changed, operations halted; please refresh the list",
+
+  // Trial
+  可手动申请: "Available for manual claim",
+  "体验积分已领取，可另行同步余额": "Trial credits claimed; balance can be synced separately",
+  体验积分已领取: "Trial credits already claimed",
+  "领取成功，请同步余额": "Claim successful, please sync balance",
+  "官方请求已结束，但领取记录保存失败；请先核对余额，不要删除记录或立即重试":
+    "Official request completed but claim record save failed; verify balance first",
+  "领取记录无法读取或保存，已停止操作；请检查凭证目录权限和磁盘空间":
+    "Claim record cannot be read/saved; check credentials directory permissions and disk space",
+
+  // Sync Balance & Catalog
+  "余额、目录和用量已同步": "Balance, catalog, and usage synced",
+  "同步不完整，保留上次成功数据": "Sync incomplete, retaining last successful data",
+  "模型目录正在同步，请稍后重试": "Model catalog is syncing, please retry later",
+  "模型目录正在变化，请稍后重试": "Model catalog is changing, please retry later",
+  没有账号目录提供该模型: "No account catalog provides this model",
+  目录尚未就绪: "Catalog not ready",
+  账号自身目录不支持模型: "Account catalog does not support model",
+  企业配额查询失败: "Enterprise quota query failed",
+  "企业账号缺少企业 ID，无法查询企业配额（已跳过个人版接口以避免误报余额）":
+    "Enterprise account missing enterprise ID; cannot query quota (skipped personal endpoint to prevent misreporting)",
+  积分响应与凭据站点不一致: "Credit response site mismatch with credential site",
+
+  // Quota package names
+  个人版订阅套餐: "Personal Subscription Plan",
+  新人权益包: "Welcome Package",
+  签到奖励: "Check-in Reward",
+  旅行奖励: "Travel Reward",
+  活动奖励: "Event Reward",
+  企业配额: "Enterprise Quota",
+
+  // Self-update & Version Checks
+  "程序目录不可写，无法自动更新": "Program directory is not writable, cannot self-update",
+  "当前进程未通过 serve 启动，无法自动重启":
+    "Current process was not launched via serve, cannot automatically restart",
+  "GitHub API 访问频率受限，请稍后重试": "GitHub API rate limit exceeded, please retry later",
+  "无法连接 GitHub，请检查网络或代理设置（HTTPS_PROXY）":
+    "Cannot connect to GitHub; check network or proxy settings (HTTPS_PROXY)",
+  "检查更新失败（HTTP ": "Failed to check for updates (HTTP ",
+  响应超过大小限制: "Response exceeds size limit",
+
+  // Installation & Rollback
+  已有更新任务正在进行: "An update task is already in progress",
+  "未找到该版本，请先检查更新": "Version not found; please check for updates first",
+  已经是该版本: "Already on this version",
+  该版本缺少发布包或校验文件: "Version is missing release archive or checksum file",
+  "通过镜像下载需要 GitHub 提供的文件摘要；该版本没有摘要，请切换为直连":
+    "Mirror download requires checksum from GitHub; this version has no checksum, please switch to direct",
+  "下载发布包失败，已尝试全部下载源": "Failed to download release archive across all sources",
+  下载发布包失败: "Failed to download release archive",
+  发布包校验失败: "Release archive checksum verification failed",
+  发布包超过大小限制: "Release archive exceeds size limit",
+  发布包内容超过限制: "Release archive content exceeds limit",
+  发布包结构异常: "Release archive structure anomaly",
+  发布包包含不安全的路径: "Release archive contains unsafe paths",
+  发布包缺少必要文件或版本不符: "Release archive missing required files or version mismatch",
+  "无法读取 Git 工作区中的未跟踪文件，已中止更新":
+    "Cannot read untracked files in Git working directory; update aborted",
+  "数据目录位于将被替换的程序目录中，无法自动更新":
+    "Data directory is located inside the application directory being replaced; cannot self-update",
+  "依赖安装失败：无法运行安装程序或已超时":
+    "Dependency installation failed: cannot run installer or timed out",
+  "依赖安装失败：": "Dependency installation failed: ",
+  "替换程序文件失败且未能完全回滚，请使用备份手动恢复":
+    "Replacing program files failed and could not fully roll back; please restore from backup manually",
+  "替换程序文件失败，已回滚到当前版本":
+    "Replacing program files failed; rolled back to current version",
+  "目标版本无法读取当前的 ": "Target version cannot read current ",
+  "更新失败：": "Update failed: ",
+
+  // Mirror Probes
+  超时: "Timeout",
+  无法连接: "Connection failed",
+  返回的不是发布包: "Not a release archive",
+  "没有可用于测速的发布包，请先检查更新":
+    "No release archive available for speed test; please check for updates first",
+};
+
+export function localizeMessage(message: unknown): string {
+  if (typeof message !== "string" || !message) return "";
+  if (currentLang !== "en") return message;
+  const direct = backendMessageMap[message];
+  if (direct) return direct;
+  let result = message;
+  for (const [zh, en] of Object.entries(backendMessageMap)) {
+    if (result.includes(zh)) {
+      result = result.replaceAll(zh, en);
+    }
+  }
+  return result;
 }

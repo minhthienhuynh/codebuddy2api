@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api, credentialResponse, errorMessage, list, object, type Credential } from "./api";
 import { Badge, Drawer, ErrorNotice } from "./components";
-import { t as translate, formatDate } from "./i18n";
+import { t as translate, formatDate, currentLanguage } from "./i18n";
 import s from "./ui.module.scss";
 
 type TrialResult = {
@@ -76,7 +76,7 @@ export function Trial({
         );
         const rows = list(object(response.data).results, "claim results");
         if (rows.length !== 1 || rows[0].id !== credential.id)
-          throw new Error("领取账号或结果未确认，请刷新状态核验");
+          throw new Error(translate("tasks.trial.unconfirmed"));
         if (!abort.signal.aborted) setStatus(result(rows[0]));
       } else {
         const response = await api.get("/credentials", { signal: abort.signal });
@@ -88,7 +88,8 @@ export function Trial({
     } catch (error) {
       if (!abort.signal.aborted) {
         setStatus((old) => ({ ...old, can_claim: false }));
-        setError(`${errorMessage(error)}；${translate("tasks.trial.failureNote")}`);
+        const sep = currentLanguage() === "en" ? "; " : "；";
+        setError(`${errorMessage(error)}${sep}${translate("tasks.trial.failureNote")}`);
       }
     } finally {
       controller.current = null;

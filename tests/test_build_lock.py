@@ -106,6 +106,7 @@ class BuildLockTests(unittest.TestCase):
             "type=semver,pattern={{version}}",
             "type=raw,value=edge,enable=${{ github.ref == 'refs/heads/main' }}",
             "type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}",
+            "type=raw,value=dev,enable=${{ github.ref == 'refs/heads/dev' }}",
         ])
         self.assertNotIn("flavor", step["with"])
 
