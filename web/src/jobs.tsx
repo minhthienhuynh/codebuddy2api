@@ -1,3 +1,4 @@
+import { t as translate } from "./i18n";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { list, object, type RecordValue } from "./api";
 import s from "./ui.module.scss";
@@ -125,10 +126,12 @@ export function JobBanner({
     <ProgressBanner title={title} completed={job.completed} total={job.total}>
       {job.current.length ? (
         job.current.map((row, index) => (
-          <small key={index}>正在{describe(row.item, row.step)}</small>
+          <small key={index}>
+            {translate("jobs.running", { step: describe(row.item, row.step) })}
+          </small>
         ))
       ) : (
-        <small>正在准备…</small>
+        <small>{translate("jobs.preparing")}</small>
       )}
     </ProgressBanner>
   );

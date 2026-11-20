@@ -108,6 +108,7 @@ export function LanguageToggle() {
   );
 }
 export function Appearance() {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const { mode, palette, dark, persisted } = useAppearance();
   useEffect(initializeAppearance, []);
@@ -115,8 +116,8 @@ export function Appearance() {
     <>
       <button
         className={s.appearanceButton}
-        aria-label="外观设置"
-        title="外观设置"
+        aria-label={t("appearance.drawerTitle")}
+        title={t("appearance.drawerTitle")}
         aria-expanded={open}
         aria-haspopup="dialog"
         onClick={() => setOpen(true)}
@@ -125,14 +126,18 @@ export function Appearance() {
       </button>
       <DrawerPresence>
         {open && (
-          <Drawer title="外观设置" className={s.appearanceDrawer} onClose={() => setOpen(false)}>
+          <Drawer
+            title={t("appearance.drawerTitle")}
+            className={s.appearanceDrawer}
+            onClose={() => setOpen(false)}
+          >
             <fieldset className={s.appearanceChoices}>
-              <legend>显示模式</legend>
+              <legend>{t("appearance.displayMode")}</legend>
               {(
                 [
-                  ["system", "跟随系统", "system"],
-                  ["light", "浅色", "sun"],
-                  ["dark", "深色", "moon"],
+                  ["system", t("appearance.mode.system"), "system"],
+                  ["light", t("appearance.mode.light"), "sun"],
+                  ["dark", t("appearance.mode.dark"), "moon"],
                 ] as const
               ).map(([value, label, icon]) => (
                 <label key={value}>
@@ -149,13 +154,13 @@ export function Appearance() {
               ))}
             </fieldset>
             <fieldset className={s.paletteChoices} disabled={dark}>
-              <legend>浅色配色</legend>
+              <legend>{t("appearance.lightPalette")}</legend>
               {(
                 [
-                  ["green", "青叶", "#6c9852"],
-                  ["blue", "雾蓝", "#527cab"],
-                  ["rose", "蔷薇", "#aa617b"],
-                  ["amber", "暖砂", "#a7804b"],
+                  ["green", t("appearance.palette.green"), "#6c9852"],
+                  ["blue", t("appearance.palette.blue"), "#527cab"],
+                  ["rose", t("appearance.palette.rose"), "#aa617b"],
+                  ["amber", t("appearance.palette.amber"), "#a7804b"],
                 ] as const
               ).map(([value, label, color]) => (
                 <label key={value}>
@@ -172,11 +177,9 @@ export function Appearance() {
               ))}
             </fieldset>
             <p className={s.note}>
-              {dark
-                ? "深色使用固定配色；浅色偏好会保留，切回浅色后生效。"
-                : "配色只应用于浅色界面，不改变状态颜色。"}
+              {dark ? t("appearance.darkFixedNote") : t("appearance.lightOnlyNote")}
             </p>
-            {!persisted && <p role="status">浏览器无法保存偏好，本次会话内仍然生效。</p>}
+            {!persisted && <p role="status">{t("appearance.notPersisted")}</p>}
           </Drawer>
         )}
       </DrawerPresence>

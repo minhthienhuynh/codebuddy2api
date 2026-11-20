@@ -39,18 +39,20 @@ function normalize(value: unknown): RecordValue & {
   const d = object(value);
   for (const field of ["series", "models", "profiles"]) {
     if (list(d[field], field).some((row) => number(row.requests) === null))
-      throw new Error(`${field} 中存在未知请求量，不能绘制为 0`);
+      throw new Error(`${field} has unknown request count and cannot be drawn as 0`);
   }
   return {
     ...d,
     summary: object(d.summary, t("dash.summary")),
     previous:
-      d.previous === null || d.previous === undefined ? null : object(d.previous, "上周期汇总"),
-    series: list(d.series, "趋势"),
-    models: list(d.models, "模型排行"),
+      d.previous === null || d.previous === undefined
+        ? null
+        : object(d.previous, "previous period summary"),
+    series: list(d.series, "trend series"),
+    models: list(d.models, "model ranking"),
     profiles: list(d.profiles, t("dash.profileUsage")),
-    health: object(d.health, "健康状态"),
-    storage: object(d.storage, "存储状态"),
+    health: object(d.health, "health status"),
+    storage: object(d.storage, "storage status"),
     range: d.range === undefined ? {} : object(d.range, t("dash.window")),
     config_notice:
       d.config_notice === undefined || d.config_notice === null

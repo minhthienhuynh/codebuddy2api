@@ -48,11 +48,12 @@ import {
 import { downloadFilename } from "../downloads";
 import s from "../ui.module.scss";
 import { SearchInput, Select } from "../fields";
+import { t as translate, formatDate, currentLanguage, localizeMessage } from "../i18n";
 import { popoverHost, usePopover } from "../popover";
 import { clearToasts, notify } from "../toast";
 
 function expiry(value: unknown) {
-  return typeof value === "number" ? new Date(value * 1000).toLocaleString("zh-CN") : text(value);
+  return typeof value === "number" ? formatDate(value) : text(value);
 }
 
 const lastErrorLabels: Record<string, string> = {
@@ -72,9 +73,34 @@ const healthLabels: Record<string, string> = {
   error: "错误",
 };
 
+const healthKeyMap: Record<string, string> = {
+  ready: "credentials.health.ready",
+  disabled: "credentials.health.disabled",
+  auto_disabled: "credentials.health.autoDisabled",
+  restricted: "credentials.health.restricted",
+  circuit_open: "credentials.health.circuitOpen",
+  expired: "credentials.health.expired",
+  error: "credentials.health.error",
+};
+const lastErrorKeyMap: Record<string, string> = {
+  http_401: "credentials.lastError.http401",
+  http_403: "credentials.lastError.http403",
+  restricted: "credentials.lastError.restricted",
+  credential_error: "credentials.lastError.credentialError",
+};
 function lastErrorLabel(value: unknown) {
   const key = text(value);
+  const k = lastErrorKeyMap[key];
+  if (k) return translate(k);
+  if (currentLanguage() === "en") return key.replaceAll("_", " ");
   return lastErrorLabels[key] ?? key;
+}
+function healthLabel(value: unknown) {
+  const key = text(value);
+  const k = healthKeyMap[key];
+  if (k) return translate(k);
+  if (currentLanguage() === "en") return key.replaceAll("_", " ");
+  return healthLabels[key] ?? key;
 }
 
 function prettyErrorJson(value: unknown) {
@@ -129,7 +155,7 @@ function LastErrorJson({ code, at, body }: { code: unknown; at: unknown; body: u
   };
   const label = (
     <>
-      最近错误：{text(lastErrorLabel(code))}
+      {translate("credentials.recentError", { label: text(lastErrorLabel(code)) })}
       {number(at) !== null ? ` · ${expiry(at)}` : ""}
     </>
   );
@@ -207,7 +233,7 @@ function ImportDrawer({ onClose, onDone }: { onClose: () => void; onDone: () => 
         });
         const server = list(object(response.data).results).map((item) => {
           if (typeof item.name !== "string" || typeof item.ok !== "boolean")
-            throw new Error("导入结果缺少 name / ok");
+            throw new Error(translate("credentials.error.missingNameOk"));
           return {
             name: item.name,
             ok: item.ok,
@@ -233,7 +259,7 @@ function ImportDrawer({ onClose, onDone }: { onClose: () => void; onDone: () => 
       .then((response) => {
         const server = list(object(response.data).results).map((item) => {
           if (typeof item.name !== "string" || typeof item.ok !== "boolean")
-            throw new Error("导入结果缺少 name / ok");
+            throw new Error(translate("credentials.error.missingNameOk"));
           return {
             name: item.name,
             ok: item.ok,
@@ -247,13 +273,13 @@ function ImportDrawer({ onClose, onDone }: { onClose: () => void; onDone: () => 
       .finally(() => setBusy(false));
   };
   return (
-    <Drawer title="导入凭证" onClose={onClose} dismissDisabled={busy}>
-      <div className={s.tabs} role="tablist" aria-label="导入方式">
+    <Drawer title={translate("credentials.import.title")} onClose={onClose} dismissDisabled={busy}>
+      <div className={s.tabs} role="tablist" aria-label={translate("credentials.import.tabs")}>
         <SegmentThumb />
         {(
           [
-            ["file", "文件导入"],
-            ["token", "仅刷新令牌"],
+            ["file", translate("credentials.import.file")],
+            ["token", translate("credentials.import.token")],
           ] as ["file" | "token", string][]
         ).map(([key, label]) => (
           <button
@@ -270,12 +296,9 @@ function ImportDrawer({ onClose, onDone }: { onClose: () => void; onDone: () => 
       </div>
       {tab === "file" ? (
         <>
-          <p className={s.note}>
-            支持 UTF-8 .info 或 ZIP，ZIP 仅接受根目录 .info。单项 ≤ 1 MiB，每批 ≤ 100 项 / 32
-            MiB，不覆盖现有文件。
-          </p>
+          <p className={s.note}>{translate("credentials.import.fileHelp")}</p>
           <label className={s.upload}>
-            选择 .info 或 ZIP
+            {translate("credentials.import.selectFile")}
             <input
               type="file"
               accept=".info,.zip"
@@ -288,16 +311,13 @@ function ImportDrawer({ onClose, onDone }: { onClose: () => void; onDone: () => 
               }}
             />
           </label>
-          {busy && <p role="status">正在检查并上传，请勿关闭…</p>}
+          {busy && <p role="status">{translate("credentials.import.uploading")}</p>}
         </>
       ) : (
         <>
-          <p className={s.note}>
-            每行一个刷新令牌，逐条换取访问令牌后写入新凭证。端点决定产品与地区：国内刷新令牌分不出
-            CLI 与 WorkBuddy，跨区令牌会被上游直接拒绝。
-          </p>
+          <p className={s.note}>{translate("credentials.import.tokenHelp")}</p>
           <label className={s.field}>
-            端点
+            {translate("values.endpoint")}
             <Select
               value={profile}
               disabled={busy}
@@ -305,39 +325,51 @@ function ImportDrawer({ onClose, onDone }: { onClose: () => void; onDone: () => 
             >
               {REFRESH_PROFILES.map((item) => (
                 <option key={item.value} value={item.value}>
-                  {item.label}（{item.value}）
+                  {profileLabel(item.value)} ({item.value})
                 </option>
               ))}
             </Select>
           </label>
           <label className={s.field}>
-            刷新令牌
+            {translate("credentials.refreshToken")}
             <textarea
               value={input}
               rows={8}
               spellCheck={false}
               disabled={busy}
-              placeholder={"每行一个刷新令牌，# 开头的行会被忽略"}
+              placeholder={translate("credentials.import.tokenPlaceholder")}
               onChange={(e) => setInput(e.target.value)}
             />
           </label>
           <p className={s.note}>
-            已识别 {parsed.tokens.length} / {MAX_REFRESH_TOKENS} 条
-            {parsed.rejected ? `，${parsed.rejected} 行超过 8192 字符已忽略` : ""}。
+            {translate("credentials.import.recognizedTokens", {
+              count: parsed.tokens.length,
+              max: MAX_REFRESH_TOKENS,
+            })}
+            {parsed.rejected
+              ? translate("credentials.import.rejectedLines", { count: parsed.rejected })
+              : ""}
+            .
           </p>
           <button
             type="button"
             disabled={busy || !parsed.tokens.length || tooMany}
             onClick={importTokens}
           >
-            {busy ? "正在逐条刷新并写入，请勿关闭…" : `刷新并导入 ${parsed.tokens.length} 条`}
+            {busy
+              ? translate("credentials.import.refreshing")
+              : translate("credentials.import.submitButton", { count: parsed.tokens.length })}
           </button>
         </>
       )}
       <ErrorNotice message={error} />
       {results.map((r, i) => (
         <div className={s.importResult} key={i}>
-          <Badge tone={r.ok ? "good" : "bad"}>{r.ok ? "已导入" : "未导入"}</Badge>
+          <Badge tone={r.ok ? "good" : "bad"}>
+            {r.ok
+              ? translate("credentials.import.imported")
+              : translate("credentials.import.notImported")}
+          </Badge>
           <strong>{r.name}</strong>
           {r.error && <p>{r.error}</p>}
         </div>
@@ -354,25 +386,35 @@ type MaintenanceAction =
   | "travel-status"
   | "daily-chat"
   | "reset-cooldown";
-const MAINTENANCE_LABELS: Record<MaintenanceAction, string> = {
-  refresh: "刷新 Token",
-  checkin: "签到",
-  sync: "同步余额",
-  travel: "旅行领派",
-  "travel-status": "旅行状态",
-  "daily-chat": "活跃打卡",
-  "reset-cooldown": "清除冷却",
-};
-// Batch runs over every account keep the names of their toolbar buttons.
-const BATCH_LABELS: Partial<Record<MaintenanceAction, string>> = {
-  sync: "同步全部余额",
-  checkin: "批量签到",
-};
+function maintenanceLabel(action: MaintenanceAction): string {
+  switch (action) {
+    case "refresh":
+      return translate("credentials.actions.refreshToken");
+    case "checkin":
+      return translate("credentials.actions.checkin");
+    case "sync":
+      return translate("credentials.actions.syncBalance");
+    case "travel":
+      return translate("credentials.actions.travelDispatch");
+    case "travel-status":
+      return translate("credentials.actions.travelStatus");
+    case "daily-chat":
+      return translate("credentials.actions.dailyChat");
+    case "reset-cooldown":
+      return translate("credentials.actions.clearCooldown");
+  }
+}
+function batchLabel(action: MaintenanceAction): string | undefined {
+  if (action === "sync") return translate("credentials.actions.syncAll");
+  if (action === "checkin") return translate("credentials.actions.batchCheckin");
+  return undefined;
+}
 const SHOWN_RESULTS = 5;
 
 function outcomeOf(r: Record<string, unknown>): { label: string; complete: boolean } {
   const travel = r.travel && typeof r.travel === "object" ? object(r.travel) : null;
-  if (r.ok === true && travel?.ok !== false) return { label: "已完成", complete: true };
+  if (r.ok === true && travel?.ok !== false)
+    return { label: translate("credentials.tasks.completed"), complete: true };
   const partial =
     r.checkin_ok === true ||
     r.claimed === true ||
@@ -381,7 +423,14 @@ function outcomeOf(r: Record<string, unknown>): { label: string; complete: boole
     r.agreement_accepted === true ||
     travel?.claimed === true ||
     travel?.departed === true;
-  return { label: partial ? "部分完成" : r.skipped ? "已跳过" : "未完成", complete: false };
+  return {
+    label: partial
+      ? translate("credentials.tasks.partial")
+      : r.skipped
+        ? translate("credentials.tasks.skipped")
+        : translate("credentials.tasks.uncompleted"),
+    complete: false,
+  };
 }
 
 /**
@@ -391,7 +440,12 @@ function outcomeOf(r: Record<string, unknown>): { label: string; complete: boole
 function notifyMaintenance(title: string, results: Record<string, unknown>[]) {
   const rows = results.map((r) => ({ r, ...outcomeOf(r) }));
   const shown = results.length === 1 ? rows : rows.filter((row) => !row.complete);
-  const counts = ["已完成", "部分完成", "已跳过", "未完成"]
+  const counts = [
+    translate("credentials.tasks.completed"),
+    translate("credentials.tasks.partial"),
+    translate("credentials.tasks.skipped"),
+    translate("credentials.tasks.uncompleted"),
+  ]
     .map((label) => [label, rows.filter((row) => row.label === label).length] as const)
     .filter(([, count]) => count > 0)
     .map(([label, count]) => `${label} ${count}`)
@@ -409,7 +463,7 @@ function notifyMaintenance(title: string, results: Record<string, unknown>[]) {
               <li key={i}>
                 <strong>{text(r.name)}</strong>
                 <Badge tone={complete ? "good" : "warn"}>{label}</Badge>
-                <span>{text(r.message)}</span>
+                <span>{localizeMessage(text(r.message))}</span>
                 <TravelSummary
                   trip={
                     r.travel && typeof r.travel === "object"
@@ -424,7 +478,9 @@ function notifyMaintenance(title: string, results: Record<string, unknown>[]) {
           </ul>
         )}
         {shown.length > SHOWN_RESULTS && (
-          <span>另有 {shown.length - SHOWN_RESULTS} 个账号未完成，请在对应卡片核验。</span>
+          <span>
+            {translate("credentials.card.moreUncompleted", { count: shown.length - SHOWN_RESULTS })}
+          </span>
         )}
       </>
     ),
@@ -472,7 +528,7 @@ function channelOf(c: Credential): Exclude<ChannelKey, "all"> {
 
 function MoreMenu({
   label,
-  title = "更多",
+  title = translate("credentials.actions.more"),
   children,
 }: {
   label?: string;
@@ -558,8 +614,8 @@ export function Credentials() {
   const maintain = (action: MaintenanceAction, credential?: Credential) => {
     if (busy) return;
     const title = credential
-      ? `${MAINTENANCE_LABELS[action]} · ${credential.name ?? credential.id}`
-      : (BATCH_LABELS[action] ?? MAINTENANCE_LABELS[action]);
+      ? `${maintenanceLabel(action)} · ${credential.name ?? credential.id}`
+      : (batchLabel(action) ?? maintenanceLabel(action));
     setBusy(true);
     setRunning({ key: `${action}:${credential?.id ?? "*"}`, title });
     setError(null);
@@ -569,17 +625,19 @@ export function Credentials() {
     void api
       .post(path, undefined, { timeout: 300000 })
       .then(({ data }) => {
-        const results = list(object(data).results, "凭证操作结果");
+        const results = list(object(data).results, translate("credentials.error.resultsContext"));
         if (
           !results.length ||
           results.some((r) => typeof r.ok !== "boolean" || typeof r.message !== "string")
         )
-          throw new Error("未收到完整操作结果，请刷新列表核验，勿直接重复执行");
-        for (const r of results) if (r.travel !== undefined) object(r.travel, "旅行操作结果");
+          throw new Error(translate("credentials.error.incompleteBatch"));
+        for (const r of results)
+          if (r.travel !== undefined)
+            object(r.travel, translate("credentials.error.travelContext"));
         notifyMaintenance(title, results);
         if (action === "travel" && credential) {
           if (results.length !== 1 || results[0].id !== credential.id)
-            throw new Error("旅行账号或结果未确认，请刷新列表核验");
+            throw new Error(translate("credentials.error.travelUnconfirmed"));
           if (results[0].buddy_confirmation !== undefined)
             setBuddyTarget({
               credential,
@@ -588,9 +646,10 @@ export function Credentials() {
             });
         }
       })
-      .catch((err: unknown) =>
-        setError(`${errorMessage(err)}；请求失败不代表后台已停止，请刷新列表核验。`),
-      )
+      .catch((err: unknown) => {
+        const sep = currentLanguage() === "en" ? "; " : "；";
+        setError(`${errorMessage(err)}${sep}${translate("credentials.error.batchFailedNote")}`);
+      })
       .finally(() => {
         setBusy(false);
         setRunning(null);
@@ -599,7 +658,7 @@ export function Credentials() {
   };
   const oauthDone = useCallback(() => {
     setDrawer(null);
-    notify({ tone: "good", title: "授权完成，凭证已添加。" });
+    notify({ tone: "good", title: translate("credentials.notify.authComplete") });
     resource.reload();
   }, [resource.reload]);
   const [now, setNow] = useState(Date.now());
@@ -625,12 +684,12 @@ export function Credentials() {
       });
       const saved = object(response.data);
       if (saved.id !== credential.id || saved.enabled !== true || !Number.isInteger(saved.revision))
-        throw new Error("限制解除结果未确认，请刷新列表核验");
+        throw new Error(translate("credentials.error.restrictionUnconfirmed"));
       notify({
         key: "restriction",
         tone: "good",
-        title: "官方限制已解除",
-        body: <span>账号已重新加入选路。</span>,
+        title: translate("credentials.notify.restrictionLifted"),
+        body: <span>{translate("credentials.card.authRejoin")}</span>,
       });
     });
   };
@@ -649,20 +708,25 @@ export function Credentials() {
         saved[field] !== enabled ||
         !Number.isInteger(saved.revision)
       )
-        throw new Error("设置保存结果未确认，请刷新列表核验");
+        throw new Error(translate("credentials.error.settingsUnconfirmed"));
       const label =
         field === "auto_checkin"
-          ? "自动签到"
+          ? translate("values.auto_checkin")
           : field === "auto_travel"
-            ? "自动旅行"
+            ? translate("values.auto_travel")
             : field === "auto_growth"
-              ? "自动成长补领"
-              : "自动活跃打卡";
+              ? translate("tasks.growth.autoBackfill")
+              : translate("values.auto_daily_chat");
       notify({
         key: "preference",
         tone: "good",
-        title: `${label}已${enabled ? "开启" : "关闭"}`,
-        body: <span>保存不会立即执行，后续维护按新设置执行。</span>,
+        title: translate("credentials.notify.toggled", {
+          label,
+          state: enabled
+            ? translate("credentials.notify.turnedOn")
+            : translate("credentials.notify.turnedOff"),
+        }),
+        body: <span>{translate("credentials.card.settingsHint")}</span>,
       });
     });
   };
@@ -719,24 +783,30 @@ export function Credentials() {
     job?.status === "running" ? (
       <JobBanner
         key={job.key}
-        title={`成长计划 · ${text(accountName(text(job.meta.account)))}`}
+        title={translate("tasks.growth.planTitle", {
+          name: text(accountName(text(job.meta.account))),
+        })}
         job={job}
         describe={describeGrowth}
       />
     ) : null;
   const channelDefs: [ChannelKey, string, string][] = [
-    ["all", "全部账号", "个人区域与企业账号汇总"],
-    ["cn", "国内区域", "国内 CodeBuddy · WorkBuddy"],
-    ["intl", "国际区域", "国际 CodeBuddy · WorkBuddy"],
-    ["enterprise", "企业账号", "独立归类 · 不按区域拆分"],
+    ["all", translate("credentials.channelAll"), translate("credentials.channelAllDesc")],
+    ["cn", translate("credentials.channelCn"), translate("credentials.channelCnDesc")],
+    ["intl", translate("credentials.channelIntl"), translate("credentials.channelIntlDesc")],
+    [
+      "enterprise",
+      translate("credentials.channelEnterprise"),
+      translate("credentials.channelEnterpriseDesc"),
+    ],
   ];
   const renderSyncIcon = (c: Credential) => (
     <button
       type="button"
       className={s.iconBtn}
       disabled={busy || c.enabled !== true}
-      aria-label={`同步余额 ${c.name ?? c.id}`}
-      title="同步余额"
+      aria-label={`${translate("credentials.actions.syncBalance")} ${c.name ?? c.id}`}
+      title={translate("credentials.actions.syncBalance")}
       onClick={() => maintain("sync", c)}
     >
       <RefreshIcon spinning={running?.key === `sync:${c.id}` || running?.key === "sync:*"} />
@@ -744,89 +814,101 @@ export function Credentials() {
   );
   const renderActions = (c: Credential) => {
     const enabledTasks = [
-      c.auto_checkin === true && "签到",
-      c.travel_supported === true && c.auto_travel === true && "旅行",
-      c.daily_chat_supported === true && c.auto_daily_chat === true && "打卡",
+      c.auto_checkin === true && translate("credentials.badge.checkin"),
+      c.travel_supported === true &&
+        c.auto_travel === true &&
+        translate("credentials.badge.travel"),
+      c.daily_chat_supported === true &&
+        c.auto_daily_chat === true &&
+        translate("credentials.badge.dailyChat"),
     ].filter(Boolean);
     return (
       <div className={s.rowActions}>
-        <button onClick={() => openDetail(c, "overview")}>详情</button>
-        <button aria-label={`任务配置 ${c.name ?? c.id}`} onClick={() => openDetail(c, "tasks")}>
-          任务配置{enabledTasks.length ? ` (${enabledTasks.length})` : ""}
+        <button onClick={() => openDetail(c, "overview")}>
+          {translate("credentials.actions.detail")}
         </button>
-        <MoreMenu label={`更多 ${c.name ?? c.id}`}>
+        <button
+          aria-label={`${translate("credentials.actions.tasksConfig")} ${c.name ?? c.id}`}
+          onClick={() => openDetail(c, "tasks")}
+        >
+          {translate("credentials.actions.tasksConfig")}
+          {enabledTasks.length ? ` (${enabledTasks.length})` : ""}
+        </button>
+        <MoreMenu label={translate("credentials.moreMenu", { name: c.name ?? c.id })}>
           <button
             disabled={busy || c.enabled !== true}
-            aria-label={`刷新凭证 ${c.name ?? c.id}`}
+            aria-label={`${translate("credentials.actions.refreshToken")} ${c.name ?? c.id}`}
             onClick={() => maintain("refresh", c)}
           >
-            刷新 Token
+            {translate("credentials.actions.refreshToken")}
           </button>
           <button
             disabled={busy || c.enabled !== true}
-            aria-label={`签到 ${c.name ?? c.id}`}
+            aria-label={`${translate("credentials.actions.checkin")} ${c.name ?? c.id}`}
             onClick={() => maintain("checkin", c)}
           >
-            {c.auto_travel === true ? "签到并旅行" : "签到"}
+            {c.auto_travel === true
+              ? translate("credentials.actions.checkinAndTravel")
+              : translate("credentials.actions.checkin")}
           </button>
           {/* Not gated on displayed cooldowns or on enablement: a reset that failed
             to persist must stay retryable, and a disabled account can still hold
             a stale cooldown worth clearing. */}
           <button
             disabled={busy}
-            aria-label={`清除冷却 ${c.name ?? c.id}`}
+            aria-label={`${translate("credentials.actions.clearCooldown")} ${c.name ?? c.id}`}
             onClick={() => maintain("reset-cooldown", c)}
           >
-            清除冷却
+            {translate("credentials.actions.clearCooldown")}
           </button>
           {c.restricted === true && (
             <button
               disabled={busy}
-              aria-label={`解除官方限制 ${c.name ?? c.id}`}
+              aria-label={`${translate("credentials.actions.liftRestriction")} ${c.name ?? c.id}`}
               onClick={() => releaseRestriction(c)}
             >
-              申诉通过，重新使用
+              {translate("credentials.actions.reappeal")}
             </button>
           )}
           {c.trial_supported === true && (
             <button
               disabled={busy || c.enabled !== true}
-              aria-label={`领取体验积分 ${c.name ?? c.id}`}
+              aria-label={`${translate("credentials.actions.claimTrial")} ${c.name ?? c.id}`}
               onClick={() => setTrialTarget(c)}
             >
-              领取体验积分
+              {translate("credentials.actions.claimTrial")}
             </button>
           )}
           {c.daily_chat_supported === true && (
             <button
               disabled={busy || c.enabled !== true}
-              aria-label={`活跃打卡 ${c.name ?? c.id}`}
+              aria-label={`${translate("credentials.actions.dailyChat")} ${c.name ?? c.id}`}
               onClick={() => maintain("daily-chat", c)}
             >
-              活跃打卡
+              {translate("credentials.actions.dailyChat")}
             </button>
           )}
           {c.travel_supported === true && (
             <>
               <button
                 disabled={busy || c.enabled !== true}
-                aria-label={`旅行状态 ${c.name ?? c.id}`}
+                aria-label={`${translate("credentials.actions.travelStatus")} ${c.name ?? c.id}`}
                 onClick={() => maintain("travel-status", c)}
               >
-                旅行状态
+                {translate("credentials.actions.travelStatus")}
               </button>
               <button
                 disabled={busy || c.enabled !== true}
-                aria-label={`旅行领派 ${c.name ?? c.id}`}
+                aria-label={`${translate("credentials.actions.travelDispatch")} ${c.name ?? c.id}`}
                 onClick={() => maintain("travel", c)}
               >
-                旅行领派
+                {translate("credentials.actions.travelDispatch")}
               </button>
             </>
           )}
         </MoreMenu>
         <button className={s.textDanger} disabled={!c.name || busy} onClick={() => setDeleting(c)}>
-          删除
+          {translate("credentials.actions.delete")}
         </button>
       </div>
     );
@@ -836,7 +918,7 @@ export function Credentials() {
       <input
         type="checkbox"
         role="switch"
-        aria-label={`启用状态 ${c.name ?? c.id}`}
+        aria-label={`${translate("credentials.actions.toggleStatus")} ${c.name ?? c.id}`}
         checked={c.enabled === true}
         disabled={busy || typeof c.enabled !== "boolean"}
         onChange={() =>
@@ -847,7 +929,13 @@ export function Credentials() {
           )
         }
       />
-      <span>{c.enabled === true ? "已启用" : c.enabled === false ? "停用" : "未知"}</span>
+      <span>
+        {c.enabled === true
+          ? translate("values.boolean.enabled")
+          : c.enabled === false
+            ? translate("values.boolean.disabled")
+            : translate("values.unknown")}
+      </span>
     </label>
   );
   const renderHealthBadge = (c: Credential) => {
@@ -864,17 +952,17 @@ export function Credentials() {
     const label =
       c.restricted === true
         ? restrictedRemaining !== null && restrictedRemaining > 0
-          ? `${healthLabels.restricted} ${restrictedRemaining}s`
-          : healthLabels.restricted
+          ? `${healthLabel("restricted")} ${restrictedRemaining}s`
+          : healthLabel("restricted")
         : disabled
           ? c.auto_disabled
-            ? healthLabels.auto_disabled
-            : healthLabels.disabled
+            ? healthLabel("auto_disabled")
+            : healthLabel("disabled")
           : remaining !== null && remaining > 0
-            ? `认证熔断 ${remaining}s`
+            ? `${healthLabel("circuit_open")} ${remaining}s`
             : c.health === "ready"
-              ? "认证正常"
-              : (healthLabels[typeof c.health === "string" ? c.health : ""] ?? text(c.health));
+              ? translate("credentials.health.readyBadge")
+              : healthLabel(c.health);
     return (
       <Badge
         tone={
@@ -897,21 +985,23 @@ export function Credentials() {
       <>
         <strong>
           {c.catalog_ready === true
-            ? "目录已就绪"
+            ? translate("credentials.status.catalogReady")
             : c.sync_pending === true
-              ? "目录同步中"
-              : "目录状态待确认"}
+              ? translate("credentials.status.catalogSyncing")
+              : translate("credentials.status.catalogPending")}
         </strong>
         <div className={s.credSyncTags}>
           <small>
             {c.token_expired === true
-              ? "Token 已过期"
+              ? translate("credentials.status.tokenExpired")
               : typeof c.sync_error === "string" && c.sync_error !== ""
-                ? "同步异常"
-                : "同步正常"}
+                ? translate("credentials.status.syncError")
+                : translate("credentials.status.syncNormal")}
           </small>
           {c.token_expired !== true && tokenAt !== null && (
-            <small>Token 至 {dateLabel(tokenAt, now / 1000)}</small>
+            <small>
+              {translate("credentials.card.tokenUntil", { date: dateLabel(tokenAt, now / 1000) })}
+            </small>
           )}
           {cooldowns ? (
             cooldowns.length ? (
@@ -924,7 +1014,7 @@ export function Credentials() {
                 </small>
               ))
             ) : (
-              <Badge>无模型冷却</Badge>
+              <Badge>{translate("credentials.card.noCooldown")}</Badge>
             )
           ) : c.model_cooldowns ? (
             <DataValue value={c.model_cooldowns} />
@@ -934,7 +1024,11 @@ export function Credentials() {
           <LastErrorJson code={c.last_error_code} at={c.last_failure_at} body={c.last_error_body} />
         )}
         {typeof c.sync_error === "string" && c.sync_error !== "" && (
-          <small>失败原因：{text(c.sync_error)}</small>
+          <small>
+            {translate("credentials.card.failReason", {
+              error: localizeMessage(text(c.sync_error)),
+            })}
+          </small>
         )}
         {c.travel_supported === true && trip && <TravelSummary trip={trip} />}
       </>
@@ -952,11 +1046,11 @@ export function Credentials() {
       return (
         <div className={s.tableUsage}>
           <div>
-            <span>请求</span>
+            <span>{translate("credentials.card.requests")}</span>
             <strong>{compact(reqs)}</strong>
           </div>
           <div>
-            <span>成功率</span>
+            <span>{translate("credentials.card.successRate")}</span>
             <strong>{rate !== null ? `${(rate * 100).toFixed(1)}%` : "—"}</strong>
           </div>
           <div>
@@ -973,25 +1067,39 @@ export function Credentials() {
     return (
       <div className={s.credUsageBox}>
         <div>
-          <span>累计请求</span>
+          <span>{translate("credentials.card.totalRequests")}</span>
           <strong>{compact(reqs)}</strong>
-          <small>{rate !== null ? `成功率 ${(rate * 100).toFixed(1)}%` : "暂无请求记录"}</small>
+          <small>
+            {rate !== null
+              ? translate("credentials.card.successRate", { rate: (rate * 100).toFixed(1) })
+              : translate("credentials.card.noRequestRecords")}
+          </small>
         </div>
         <div>
-          <span>总 Token</span>
+          <span>{translate("credentials.card.totalTokens")}</span>
           <strong>{totalTokens !== null ? compact(totalTokens) : "0"}</strong>
-          <small>缓存 {cacheTokens !== null ? compact(cacheTokens) : "0"}</small>
+          <small>
+            {translate("credentials.card.cacheTokens", {
+              tokens: cacheTokens !== null ? compact(cacheTokens) : "0",
+            })}
+          </small>
         </div>
         <div>
-          <span>Credit 消耗</span>
+          <span>{translate("credentials.card.creditUsage")}</span>
           <strong>{credit !== null ? metric(credit) : "0"}</strong>
-          <small>{avgMs !== null ? `平均耗时 ${(avgMs / 1000).toFixed(1)}s` : "耗时 —"}</small>
+          <small>
+            {avgMs !== null
+              ? translate("credentials.card.avgDuration", { sec: (avgMs / 1000).toFixed(1) })
+              : translate("credentials.card.durationNone")}
+          </small>
         </div>
         <div>
-          <span>最近调用</span>
+          <span>{translate("credentials.card.lastCall")}</span>
           <strong>{stats?.last_model ? text(stats.last_model) : "—"}</strong>
           <small>
-            {stats?.last_request_at !== undefined ? expiry(stats.last_request_at) : "尚无调用"}
+            {stats?.last_request_at !== undefined
+              ? expiry(stats.last_request_at)
+              : translate("credentials.card.noCalls")}
           </small>
         </div>
       </div>
@@ -1009,16 +1117,20 @@ export function Credentials() {
             <input
               type="checkbox"
               role="switch"
-              aria-label={`自动签到 ${c.name ?? c.id}`}
+              aria-label={`${translate("credentials.auto.checkin")} ${c.name ?? c.id}`}
               checked={c.auto_checkin === true}
               disabled={busy || typeof c.auto_checkin !== "boolean"}
               onChange={(e) => preference(c, "auto_checkin", e.target.checked)}
             />
-            自动签到
+            {translate("values.auto_checkin")}
           </label>
           <small>
-            上次签到{checkin?.date ? `（${text(checkin.date)}）` : ""}：
-            {checkin ? text(checkin.message) : "尚未查询"}
+            {translate("credentials.card.lastCheckin", {
+              date: checkin?.date ? ` (${text(checkin.date)})` : "",
+              msg: checkin
+                ? localizeMessage(text(checkin.message))
+                : translate("credentials.card.notQueried"),
+            })}
           </small>
         </div>
         <div className={s.credTaskRow}>
@@ -1026,19 +1138,23 @@ export function Credentials() {
             <input
               type="checkbox"
               role="switch"
-              aria-label={`自动旅行 ${c.name ?? c.id}`}
+              aria-label={`${translate("credentials.auto.travel")} ${c.name ?? c.id}`}
               checked={c.auto_travel === true}
               disabled={busy || c.travel_supported !== true || typeof c.auto_travel !== "boolean"}
               onChange={(e) => preference(c, "auto_travel", e.target.checked)}
             />
-            自动旅行
+            {translate("values.auto_travel")}
           </label>
           <small>
             {c.travel_supported === true
-              ? `上次旅行：${trip ? text(trip.message) : "尚未查询"}`
+              ? trip
+                ? translate("credentials.lastTripWithMsg", {
+                    msg: localizeMessage(text(trip.message)),
+                  })
+                : translate("credentials.notQueried")
               : isEnterprise(c)
-                ? "企业账号不参与成长中心，无法旅行"
-                : "旅行仅适用于国内账号"}
+                ? translate("credentials.enterpriseNoTravel")
+                : translate("credentials.travelCnOnly")}
           </small>
         </div>
         <div className={s.credTaskRow}>
@@ -1046,35 +1162,45 @@ export function Credentials() {
             <input
               type="checkbox"
               role="switch"
-              aria-label={`自动活跃打卡 ${c.name ?? c.id}`}
+              aria-label={`${translate("credentials.auto.dailyChat")} ${c.name ?? c.id}`}
               checked={c.auto_daily_chat === true}
               disabled={
                 busy || c.daily_chat_supported !== true || typeof c.auto_daily_chat !== "boolean"
               }
               onChange={(e) => preference(c, "auto_daily_chat", e.target.checked)}
             />
-            自动活跃打卡
+            {translate("credentials.auto.dailyChat")}
           </label>
           <small>
             {c.daily_chat_supported === true
-              ? `今日打卡：${dailyChat ? text(dailyChat.message) : "尚未执行"}`
-              : "活跃打卡仅适用于国际 WorkBuddy 账号"}
+              ? dailyChat
+                ? translate("credentials.dailyChatWithMsg", {
+                    msg: localizeMessage(text(dailyChat.message)),
+                  })
+                : translate("credentials.notExecuted")
+              : translate("credentials.dailyChatIntlOnly")}
           </small>
         </div>
         {dailyChat?.acp_usage != null && (
-          <small>本次会话成本：{text(dailyChat.acp_usage)} 积分</small>
+          <small>
+            {translate("credentials.card.chatCost", { cost: text(dailyChat.acp_usage) })}
+          </small>
         )}
-        {trip?.stale === true && <small>状态可能已变化，请先查询核验</small>}
+        {trip?.stale === true && <small>{translate("credentials.card.tripStaleHint")}</small>}
         {c.travel_supported === true && <TravelSummary trip={trip} />}
-        {c.enabled === false && <small>账号停用期间不执行自动任务</small>}
+        {c.enabled === false && <small>{translate("credentials.card.disabledTaskHint")}</small>}
         {c.trial_supported === true && c.trial != null && (
-          <small>体验积分：{text(object(c.trial).message)}</small>
+          <small>
+            {translate("credentials.card.trialMsg", {
+              msg: localizeMessage(text(object(c.trial).message)),
+            })}
+          </small>
         )}
         {c.growth_supported === true && (
           <>
             <small>
-              <strong>成长计划</strong>
-              （仅国内个人账号；任务开关默认关闭，开启后自动推进）
+              <strong>{translate("credentials.card.growthTitle")}</strong>
+              {translate("credentials.card.growthHint")}
             </small>
             <GrowthTasks
               credential={c}
@@ -1092,7 +1218,7 @@ export function Credentials() {
   return (
     <>
       <PageTitle
-        title="凭证管理"
+        title={translate("credentials.credManagement")}
         actions={
           <>
             <button
@@ -1102,37 +1228,46 @@ export function Credentials() {
               }}
             >
               <RefreshIcon spinning={resource.refreshing} />
-              刷新列表
+              {translate("common.refreshList")}
             </button>
             <button disabled={busy} onClick={() => maintain("sync")}>
-              同步全部余额
+              {translate("credentials.actions.syncAll")}
             </button>
-            <MoreMenu label="批量操作" title="批量操作">
+            <MoreMenu
+              label={translate("credentials.batch.more")}
+              title={translate("credentials.batch.more")}
+            >
               <button disabled={busy} onClick={() => maintain("checkin")}>
-                批量签到
+                {translate("credentials.actions.batchCheckin")}
               </button>
-              <button onClick={() => setDrawer("import")}>导入文件</button>
+              <button onClick={() => setDrawer("import")}>
+                {translate("credentials.batch.importFile")}
+              </button>
               <button disabled={!liveSelected.length} onClick={() => setDrawer("export")}>
-                导出已选 ({liveSelected.length})
+                {translate("credentials.batch.exportSelected", { count: liveSelected.length })}
               </button>
             </MoreMenu>
             <button className={s.primary} onClick={() => setDrawer("oauth")}>
               <Icon name="key" />
-              添加凭证
+              {translate("credentials.actions.addCred")}
             </button>
           </>
         }
       />
       {!detail && running && (
         <ProgressBanner title={running.title}>
-          <small>正在执行，请勿重复提交…</small>
+          <small>{translate("credentials.busySubmitting")}</small>
         </ProgressBanner>
       )}
       {growthJobs.jobs.map(growthBanner)}
       <ResourceState {...resource} />
       {!detail && <ErrorNotice message={error} />}
       {resource.data && (
-        <div className={s.channelTrack} role="group" aria-label="区域与账号类型筛选">
+        <div
+          className={s.channelTrack}
+          role="group"
+          aria-label={translate("credentials.filter.channelTrack")}
+        >
           <SegmentThumb />
           {channelDefs.map(([key, label, hint]) => {
             const group = key === "all" ? allItems : allItems.filter((c) => channelOf(c) === key);
@@ -1162,8 +1297,8 @@ export function Credentials() {
                 className={active ? s.channelActive : ""}
                 title={
                   hasNumeric
-                    ? `${group.length} 个账号 · 剩余额度 ${metric(totalCredits)}${unlimited ? ` (+${unlimited} 无限)` : ""}`
-                    : `${group.length} 个账号 · ${hint}`
+                    ? `${translate("credentials.groupSummary", { count: group.length, credits: metric(totalCredits) })}${unlimited ? translate("credentials.unlimitedSuffix", { count: unlimited }) : ""}`
+                    : `${translate("credentials.accountsCount", { count: group.length })} · ${hint}`
                 }
                 onClick={() => {
                   setChannel(active && key !== "all" ? "all" : key);
@@ -1171,9 +1306,15 @@ export function Credentials() {
                 }}
               >
                 <span>{label}</span>
-                <strong>{hasNumeric ? compact(totalCredits) : unlimited > 0 ? "无限" : "—"}</strong>
+                <strong>
+                  {hasNumeric
+                    ? compact(totalCredits)
+                    : unlimited > 0
+                      ? translate("credits.panel.infinite")
+                      : "—"}
+                </strong>
                 <small>
-                  {ready} / {group.length} 就绪
+                  {translate("credentials.card.readyCount", { ready, total: group.length })}
                 </small>
               </button>
             );
@@ -1181,44 +1322,51 @@ export function Credentials() {
         </div>
       )}
       <Panel
-        title="账号凭证"
+        title={translate("credentials.credAccounts")}
         hint={
           resource.data
             ? filtered.length === allItems.length
-              ? `${allItems.length} 个账号`
-              : `筛选 ${filtered.length} / ${allItems.length} 个账号`
-            : "等待凭证列表"
+              ? translate("credentials.accountsCount", { count: allItems.length })
+              : translate("credentials.filteredAccountsCount", {
+                  filtered: filtered.length,
+                  total: allItems.length,
+                })
+            : translate("credentials.waitingList")
         }
       >
         <div className={s.credFilterBar}>
           <div className={s.credFilterLeft}>
             <label className={s.check}>
               <input
-                aria-label="选择全部凭证"
+                aria-label={translate("credentials.select.all")}
                 type="checkbox"
                 checked={allItems.length > 0 && liveSelected.length === allItems.length}
                 onChange={(e) => setSelected(e.target.checked ? allItems.map((c) => c.id) : [])}
               />
-              全选
+              {translate("credentials.actions.selectAll")}
             </label>
             <SearchInput
               className={s.credSearch}
-              aria-label="搜索凭证"
-              placeholder="搜索账号文件名、昵称或 UID…"
+              aria-label={translate("credentials.search.placeholder")}
+              placeholder={translate("credentials.search.placeholder")}
               value={query}
               onChange={(value) => {
                 setQuery(value);
                 setPage(1);
               }}
             />
-            <div className={s.statusPills} role="group" aria-label="状态筛选">
+            <div
+              className={s.statusPills}
+              role="group"
+              aria-label={translate("credentials.filter.statusPills")}
+            >
               <SegmentThumb />
               {(
                 [
-                  ["all", "全部"],
-                  ["ready", "就绪"],
-                  ["issue", "冷却 / 异常"],
-                  ["disabled", "已停用"],
+                  ["all", translate("credentials.status.all")],
+                  ["ready", translate("credentials.health.ready")],
+                  ["issue", translate("credentials.status.issue")],
+                  ["disabled", translate("credentials.health.disabled")],
                 ] as [StatusFilter, string][]
               ).map(([key, label]) => (
                 <button
@@ -1236,10 +1384,16 @@ export function Credentials() {
               ))}
             </div>
             {liveSelected.length > 0 && (
-              <button onClick={() => setDrawer("export")}>导出已选 ({liveSelected.length})</button>
+              <button onClick={() => setDrawer("export")}>
+                {translate("credentials.batch.exportSelected", { count: liveSelected.length })}
+              </button>
             )}
           </div>
-          <div className={s.viewSwitch} role="group" aria-label="视图切换">
+          <div
+            className={s.viewSwitch}
+            role="group"
+            aria-label={translate("credentials.filter.viewSwitch")}
+          >
             <SegmentThumb />
             <button
               type="button"
@@ -1247,7 +1401,7 @@ export function Credentials() {
               className={view === "cards" ? s.viewActive : ""}
               onClick={() => chooseView("cards")}
             >
-              卡片视图
+              {translate("credentials.view.card")}
             </button>
             <button
               type="button"
@@ -1255,7 +1409,7 @@ export function Credentials() {
               className={view === "list" ? s.viewActive : ""}
               onClick={() => chooseView("list")}
             >
-              列表视图
+              {translate("credentials.view.list")}
             </button>
           </div>
         </div>
@@ -1263,7 +1417,11 @@ export function Credentials() {
           (filtered.length ? (
             <>
               {view === "cards" ? (
-                <div className={s.credCardGrid} role="table" aria-label="账号凭证卡片">
+                <div
+                  className={s.credCardGrid}
+                  role="table"
+                  aria-label={translate("credentials.cardTable")}
+                >
                   {paged.map((c) => {
                     const balance =
                       c.credits && typeof c.credits === "object" ? object(c.credits) : null;
@@ -1272,7 +1430,9 @@ export function Credentials() {
                         <div className={s.credCardHead}>
                           <div className={s.credCardTitle}>
                             <input
-                              aria-label={`选择 ${c.name ?? c.id}`}
+                              aria-label={translate("credentials.select.one", {
+                                name: c.name ?? c.id,
+                              })}
                               type="checkbox"
                               checked={liveSelected.includes(c.id)}
                               onChange={(e) =>
@@ -1284,10 +1444,12 @@ export function Credentials() {
                               }
                             />
                             <div>
-                              <strong>{c.name ?? "安全文件名不可用"}</strong>
+                              <strong>{c.name ?? translate("credentials.card.unnamedCred")}</strong>
                               <small>
                                 {isEnterprise(c)
-                                  ? `企业账号 · ${profileLabel(text(c.profile))}`
+                                  ? translate("credentials.card.enterpriseBadge", {
+                                      profile: profileLabel(text(c.profile)),
+                                    })
                                   : profileLabel(text(c.profile))}{" "}
                                 · {text(c.nickname ?? c.uid)}
                               </small>
@@ -1301,20 +1463,20 @@ export function Credentials() {
                         <div className={s.credCardStats}>
                           <div>
                             <div className={s.credStatHead}>
-                              <span>官方余额 / 到期</span>
+                              <span>{translate("credentials.card.thCredits")}</span>
                               {renderSyncIcon(c)}
                             </div>
                             <strong role="cell">
                               {balance
                                 ? balance.unlimited && balance.enterprise
-                                  ? "无限"
+                                  ? translate("values.unlimited")
                                   : metric(balance.credits ?? balance.remaining)
-                                : "未知"}
+                                : translate("values.unknown")}
                             </strong>
                             <BalanceExpiry credits={balance} now={now / 1000} />
                           </div>
                           <div>
-                            <span>目录与同步状态</span>
+                            <span>{translate("credentials.card.thSync")}</span>
                             {renderSyncAndCatalog(c)}
                           </div>
                         </div>
@@ -1330,12 +1492,12 @@ export function Credentials() {
                     <thead>
                       <tr>
                         <th></th>
-                        <th>凭证 / 产品</th>
-                        <th>目录与同步状态</th>
-                        <th>官方余额 / 到期</th>
-                        <th>请求与用量</th>
-                        <th>认证与启用</th>
-                        <th>操作</th>
+                        <th>{translate("credentials.card.thCred")}</th>
+                        <th>{translate("credentials.card.thSync")}</th>
+                        <th>{translate("credentials.card.thCredits")}</th>
+                        <th>{translate("credentials.card.thUsage")}</th>
+                        <th>{translate("credentials.card.thAuth")}</th>
+                        <th>{translate("credentials.card.thActions")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1346,7 +1508,9 @@ export function Credentials() {
                           <tr key={c.id}>
                             <td>
                               <input
-                                aria-label={`选择 ${c.name ?? c.id}`}
+                                aria-label={translate("credentials.select.one", {
+                                  name: c.name ?? c.id,
+                                })}
                                 type="checkbox"
                                 checked={liveSelected.includes(c.id)}
                                 onChange={(e) =>
@@ -1359,10 +1523,12 @@ export function Credentials() {
                               />
                             </td>
                             <td>
-                              <strong>{c.name ?? "安全文件名不可用"}</strong>
+                              <strong>{c.name ?? translate("credentials.card.unnamedCred")}</strong>
                               <small>
                                 {isEnterprise(c)
-                                  ? `企业账号 · ${profileLabel(text(c.profile))}`
+                                  ? translate("credentials.card.enterpriseBadge", {
+                                      profile: profileLabel(text(c.profile)),
+                                    })
                                   : profileLabel(text(c.profile))}{" "}
                                 · {text(c.nickname ?? c.uid)}
                               </small>
@@ -1373,9 +1539,9 @@ export function Credentials() {
                                 <strong>
                                   {balance
                                     ? balance.unlimited && balance.enterprise
-                                      ? "无限"
+                                      ? translate("values.unlimited")
                                       : metric(balance.credits ?? balance.remaining)
-                                    : "未知"}
+                                    : translate("values.unknown")}
                                 </strong>
                                 {renderSyncIcon(c)}
                               </div>
@@ -1398,18 +1564,21 @@ export function Credentials() {
               )}
               <div className={s.credPager}>
                 <span>
-                  第 {(safePage - 1) * pageSize + 1}–
-                  {Math.min(filtered.length, safePage * pageSize)} 条 · 共 {filtered.length} 个账号
+                  {translate("credentials.pageSummary", {
+                    from: (safePage - 1) * pageSize + 1,
+                    to: Math.min(filtered.length, safePage * pageSize),
+                    total: filtered.length,
+                  })}
                 </span>
                 <div className={s.credPagerRight}>
                   <Select
-                    aria-label="每页显示数量"
+                    aria-label={translate("credentials.perPage")}
                     value={pageSize}
                     onChange={(value) => choosePageSize(Number(value))}
                   >
                     {PAGE_SIZES.map((n) => (
                       <option key={n} value={n}>
-                        {n} / 页
+                        {translate("credentials.card.perPageOption", { count: n })}
                       </option>
                     ))}
                   </Select>
@@ -1418,24 +1587,32 @@ export function Credentials() {
                     disabled={safePage <= 1}
                     onClick={() => setPage(Math.max(1, safePage - 1))}
                   >
-                    上一页
+                    {translate("credentials.actions.prevPage")}
                   </button>
                   <span>
-                    第 {safePage} / {totalPages} 页
+                    {translate("credentials.pageOf", { page: safePage, total: totalPages })}
                   </span>
                   <button
                     type="button"
                     disabled={safePage >= totalPages}
                     onClick={() => setPage(Math.min(totalPages, safePage + 1))}
                   >
-                    下一页
+                    {translate("credentials.actions.nextPage")}
                   </button>
                 </div>
               </div>
             </>
           ) : (
-            <Empty title={allItems.length ? "没有匹配的凭证" : "还没有凭证"}>
-              {allItems.length ? "可切换上方区域或清除筛选条件。" : "添加账号或导入 .info 文件。"}
+            <Empty
+              title={
+                allItems.length
+                  ? translate("credentials.empty.noMatch")
+                  : translate("credentials.empty.noCreds")
+              }
+            >
+              {allItems.length
+                ? translate("credentials.emptyFilterHint")
+                : translate("credentials.emptyAddHint")}
             </Empty>
           ))}
       </Panel>
@@ -1449,7 +1626,9 @@ export function Credentials() {
             onClose={() => setBuddyTarget(null)}
             onDone={(result) => {
               notifyMaintenance(
-                `首次领取猫猫并派遣 · ${buddyTarget.credential.name ?? buddyTarget.credential.id}`,
+                translate("credentials.firstBuddyAndDispatch", {
+                  name: buddyTarget.credential.name ?? buddyTarget.credential.id,
+                }),
                 [result],
               );
               resource.reload();
@@ -1477,12 +1656,14 @@ export function Credentials() {
       <DrawerPresence>
         {detail && liveDetail && (
           <Drawer
-            title={`凭证详情 · ${liveDetail.name ?? liveDetail.id}`}
+            title={translate("credentials.detail.title", {
+              name: liveDetail.name ?? liveDetail.id,
+            })}
             onClose={() => setDetail(null)}
           >
             {running && (
               <ProgressBanner title={running.title}>
-                <small>正在执行，请勿重复提交…</small>
+                <small>{translate("credentials.busySubmitting")}</small>
               </ProgressBanner>
             )}
             {growthBanner(growthJobs.byAccount(liveDetail.id))}
@@ -1498,19 +1679,23 @@ export function Credentials() {
                   disabled={busy || liveDetail.enabled !== true}
                   onClick={() => maintain("refresh", liveDetail)}
                 >
-                  刷新 Token
+                  {translate("credentials.actions.refreshToken")}
                 </button>
               </div>
             </div>
-            <div className={s.tabs} role="tablist" aria-label="凭证详情分区">
+            <div
+              className={s.tabs}
+              role="tablist"
+              aria-label={translate("credentials.detailSections")}
+            >
               <SegmentThumb />
               {(
                 [
-                  ["overview", "概览与请求"],
-                  ["credits", "官方额度"],
-                  ["tasks", "自动化配置"],
-                  ["cooldowns", "绑定与冷却"],
-                  ["raw", "原始诊断"],
+                  ["overview", translate("credentials.detail.overviewReq")],
+                  ["credits", translate("credentials.detail.officialCredits")],
+                  ["tasks", translate("credentials.detail.autoConfig")],
+                  ["cooldowns", translate("credentials.detail.bindingsCooldowns")],
+                  ["raw", translate("credentials.detail.rawDiag")],
                 ] as [DetailTab, string][]
               ).map(([key, label]) => (
                 <button
@@ -1527,24 +1712,24 @@ export function Credentials() {
             </div>
             {detail.tab === "overview" && (
               <>
-                <Panel title="请求与用量概览">
+                <Panel title={translate("credentials.tabs.overview")}>
                   <div className={s.panelBody}>{renderUsageBlock(liveDetail)}</div>
                 </Panel>
-                <Panel title="目录与同步状态">
+                <Panel title={translate("credentials.tabs.catalog")}>
                   <div className={s.panelBody}>{renderSyncAndCatalog(liveDetail)}</div>
                 </Panel>
-                <Panel title="最近请求记录">
+                <Panel title={translate("credentials.tabs.logs")}>
                   <div className={s.panelBody}>
                     {detailLogs === null ? (
-                      <small>正在加载请求记录…</small>
+                      <small>{translate("credentials.detail.loadingRequests")}</small>
                     ) : detailLogs.length ? (
                       <div className={s.tableWrap}>
                         <table>
                           <thead>
                             <tr>
-                              <th>时间</th>
-                              <th>模型</th>
-                              <th>状态</th>
+                              <th>{translate("credentials.detail.thTime")}</th>
+                              <th>{translate("credentials.detail.thModel")}</th>
+                              <th>{translate("credentials.detail.thStatus")}</th>
                               <th>Token</th>
                               <th>Credit</th>
                             </tr>
@@ -1567,7 +1752,7 @@ export function Credentials() {
                         </table>
                       </div>
                     ) : (
-                      <Empty title="暂无该凭证的请求明细" />
+                      <Empty title={translate("credentials.empty.noRequests")} />
                     )}
                   </div>
                 </Panel>
@@ -1575,18 +1760,18 @@ export function Credentials() {
             )}
             {detail.tab === "credits" && <CreditsPanel credential={liveDetail} now={now / 1000} />}
             {detail.tab === "tasks" && (
-              <Panel title="自动任务与日常维护">
+              <Panel title={translate("credentials.tabs.tasks")}>
                 <div className={s.panelBody}>
-                  <p className={s.storageSubtle}>
-                    自动任务按账号保存：国内默认签到后旅行，国际默认关闭。开关分别生效；余额同步不触发领取，关闭开关不撤回已发送的请求。
-                  </p>
+                  <p className={s.storageSubtle}>{translate("credentials.card.autoTasksDesc")}</p>
                   {renderAutomationPanel(liveDetail)}
                   <div className={s.rowActions}>
                     <button
                       disabled={busy || liveDetail.enabled !== true}
                       onClick={() => maintain("checkin", liveDetail)}
                     >
-                      {liveDetail.auto_travel === true ? "签到并旅行" : "签到"}
+                      {liveDetail.auto_travel === true
+                        ? translate("credentials.actions.checkinAndTravel")
+                        : translate("credentials.actions.checkin")}
                     </button>
                     {liveDetail.travel_supported === true && (
                       <>
@@ -1594,13 +1779,13 @@ export function Credentials() {
                           disabled={busy || liveDetail.enabled !== true}
                           onClick={() => maintain("travel-status", liveDetail)}
                         >
-                          旅行状态
+                          {translate("credentials.actions.travelStatus")}
                         </button>
                         <button
                           disabled={busy || liveDetail.enabled !== true}
                           onClick={() => maintain("travel", liveDetail)}
                         >
-                          旅行领派
+                          {translate("credentials.actions.travelDispatch")}
                         </button>
                       </>
                     )}
@@ -1609,7 +1794,7 @@ export function Credentials() {
                         disabled={busy || liveDetail.enabled !== true}
                         onClick={() => maintain("daily-chat", liveDetail)}
                       >
-                        活跃打卡
+                        {translate("credentials.actions.dailyChat")}
                       </button>
                     )}
                     {liveDetail.trial_supported === true && (
@@ -1617,7 +1802,7 @@ export function Credentials() {
                         disabled={busy || liveDetail.enabled !== true}
                         onClick={() => setTrialTarget(liveDetail)}
                       >
-                        领取体验积分
+                        {translate("credentials.actions.claimTrial")}
                       </button>
                     )}
                   </div>
@@ -1625,21 +1810,23 @@ export function Credentials() {
               </Panel>
             )}
             {detail.tab === "cooldowns" && (
-              <Panel title="模型绑定与 429 冷却">
+              <Panel title={translate("credentials.tabs.bindings")}>
                 <div className={s.panelBody}>
                   <div className={s.details}>
                     <div>
-                      <span>绑定模型规则</span>
+                      <span>{translate("credentials.card.boundModelRules")}</span>
                       <strong>
                         {Array.isArray(liveDetail.bindings) && liveDetail.bindings.length
-                          ? liveDetail.bindings.map(text).join("、")
-                          : "无专属绑定（参与公共选路）"}
+                          ? liveDetail.bindings
+                              .map(text)
+                              .join(currentLanguage() === "en" ? ", " : "、")
+                          : translate("credentials.card.noExclusiveBinding")}
                       </strong>
                     </div>
                   </div>
                   <div className={s.rowActions}>
                     <button disabled={busy} onClick={() => maintain("reset-cooldown", liveDetail)}>
-                      清除全部冷却
+                      {translate("credentials.detail.clearAllCooldowns")}
                     </button>
                   </div>
                 </div>
@@ -1651,18 +1838,23 @@ export function Credentials() {
       </DrawerPresence>
       <DrawerPresence>
         {deleting && (
-          <Drawer title="删除凭证" onClose={() => setDeleting(null)} dismissDisabled={busy}>
+          <Drawer
+            title={translate("credentials.delete.title")}
+            onClose={() => setDeleting(null)}
+            dismissDisabled={busy}
+          >
             <div className={s.warning}>
-              将永久删除 {deleting.name}，不可撤销。
+              {translate("credentials.delete.desc", { name: deleting.name ?? deleting.id })}
               {deleting.bindings === undefined ? (
-                "如已绑定模型规则，请先解除绑定。"
+                translate("credentials.delete.unreferenced")
               ) : boundModels(deleting).length ? (
                 <>
-                  该凭证仍被模型规则引用：{boundModels(deleting).join("、")}。
-                  确认后将自动解除这些绑定，规则回退为自动选择账号。
+                  {translate("credentials.delete.referenced", {
+                    models: boundModels(deleting).join(", "),
+                  })}
                 </>
               ) : (
-                "该凭证未被模型规则引用。"
+                translate("credentials.delete.unreferenced")
               )}
             </div>
             <ErrorNotice message={error} />
@@ -1679,22 +1871,25 @@ export function Credentials() {
                 )
               }
             >
-              {boundModels(deleting).length ? "解除绑定并删除凭证" : "确认删除凭证"}
+              {boundModels(deleting).length
+                ? translate("credentials.delete.unbindAndDelete")
+                : translate("credentials.delete.confirmDelete")}
             </button>
           </Drawer>
         )}
       </DrawerPresence>
       <DrawerPresence>
         {drawer === "export" && (
-          <Drawer title="导出明文凭证" onClose={() => setDrawer(null)} dismissDisabled={busy}>
+          <Drawer
+            title={translate("credentials.export.title")}
+            onClose={() => setDrawer(null)}
+            dismissDisabled={busy}
+          >
             <div className={s.warning}>
               <Icon name="alert" />
               <div>
-                <strong>文件包含明文认证信息</strong>
-                <p>
-                  将导出 {liveSelected.length}{" "}
-                  个凭证，他人可能借此使用账号。请仅保存在可信设备，勿分享或公开上传。
-                </p>
+                <strong>{translate("credentials.export.warning")}</strong>
+                <p>{translate("credentials.export.desc", { count: liveSelected.length })}</p>
               </div>
             </div>
             <ErrorNotice message={error} />
@@ -1711,10 +1906,11 @@ export function Credentials() {
                     { responseType: "blob" },
                   )
                   .then((response) => {
-                    if (!response.data.size) throw new Error("导出响应为空");
+                    if (!response.data.size)
+                      throw new Error(translate("credentials.error.exportEmpty"));
                     const type = String(response.headers["content-type"] ?? "");
                     if (type.includes("json") || type.includes("html"))
-                      throw new Error("导出响应不是凭证附件");
+                      throw new Error(translate("credentials.error.exportNotAttachment"));
                     const url = URL.createObjectURL(response.data);
                     const link = document.createElement("a");
                     link.href = url;
@@ -1731,7 +1927,7 @@ export function Credentials() {
                   .finally(() => setBusy(false));
               }}
             >
-              我理解明文风险，下载已选凭证
+              {translate("credentials.export.confirmButton")}
             </button>
           </Drawer>
         )}

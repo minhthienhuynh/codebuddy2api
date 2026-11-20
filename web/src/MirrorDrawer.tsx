@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { api, errorMessage, list, number, object, text } from "./api";
 import { Badge, Drawer, ErrorNotice, Icon, RefreshIcon } from "./components";
-import { useT } from "./i18n";
+import { localizeMessage, useT } from "./i18n";
 import s from "./ui.module.scss";
 
 type Probe = {
@@ -149,7 +149,7 @@ export function MirrorDrawer({
           ) : probe.ok && probe.speed !== null ? (
             `${probe.latency ?? "—"} ms · ${rate(probe.speed)}`
           ) : (
-            <Badge tone="bad">{probe.error ?? "—"}</Badge>
+            <Badge tone="bad">{localizeMessage(probe.error) || "—"}</Badge>
           )}
         </span>
         <span className={s.mirrorActions}>

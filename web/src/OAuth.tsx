@@ -1,3 +1,4 @@
+import { t as translate } from "./i18n";
 import { useEffect, useRef, useState } from "react";
 import { api, errorMessage, number, object, text } from "./api";
 import { Drawer, ErrorNotice, Icon } from "./components";
@@ -6,7 +7,7 @@ import s from "./ui.module.scss";
 import { Select } from "./fields";
 
 export function safeOAuthUrl(value: unknown): string {
-  if (typeof value !== "string") throw new Error("OAuth 响应缺少验证链接");
+  if (typeof value !== "string") throw new Error(translate("tasks.oauth.missingLink"));
   const url = new URL(value);
   if (
     url.protocol !== "https:" ||
@@ -21,14 +22,14 @@ export function safeOAuthUrl(value: unknown): string {
       "copilot.tencent.com",
     ].includes(url.hostname)
   )
-    throw new Error("服务返回了不在官方白名单中的 OAuth 链接");
+    throw new Error(translate("tasks.oauth.untrustedLink"));
   return url.href;
 }
 export function OAuth({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
   const exiting = useExiting();
   const [site, setSite] = useState("cn");
   const [login, setLogin] = useState<{ id: string; url: string; until: number } | null>(null);
-  const [message, setMessage] = useState("选择站点后发起授权。");
+  const [message, setMessage] = useState(() => translate("tasks.oauth.selectSiteHint"));
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const controller = useRef<AbortController | null>(null);
@@ -43,7 +44,7 @@ export function OAuth({ onClose, onDone }: { onClose: () => void; onDone: () => 
     const poll = async () => {
       if (Date.now() > login.until) {
         setLogin(null);
-        setMessage("授权已过期，请重新发起。");
+        setMessage(translate("tasks.oauth.expired"));
         return;
       }
       // Keep this bounded flow active while the official authorization tab has focus.
@@ -54,7 +55,7 @@ export function OAuth({ onClose, onDone }: { onClose: () => void; onDone: () => 
         });
         if (abort.signal.aborted) return;
         const data = object(response.data);
-        if (typeof data.done !== "boolean") throw new Error("OAuth 轮询响应缺少 done 状态");
+        if (typeof data.done !== "boolean") throw new Error(translate("tasks.oauth.missingDone"));
         if (data.done) {
           setLogin(null);
           if (data.error) setError(text(data.error));
@@ -68,7 +69,7 @@ export function OAuth({ onClose, onDone }: { onClose: () => void; onDone: () => 
         if (!abort.signal.aborted) {
           setError(errorMessage(err));
           setLogin(null);
-          setMessage("请重新发起授权。");
+          setMessage(translate("tasks.oauth.reinitiate"));
         }
       }
     };
@@ -81,16 +82,14 @@ export function OAuth({ onClose, onDone }: { onClose: () => void; onDone: () => 
     };
   }, [login, onDone, exiting]);
   return (
-    <Drawer title="OAuth 添加凭证" onClose={onClose}>
-      <p className={s.note}>
-        仅在官方站点完成授权。入库成功后自动关闭此抽屉并刷新列表；官方标签页保持安全隔离，请在授权后手动关闭。
-      </p>
+    <Drawer title={translate("tasks.oauth.title")} onClose={onClose}>
+      <p className={s.note}>{translate("tasks.oauth.note")}</p>
       <label className={s.field}>
-        登录站点
+        {translate("tasks.oauth.loginSite")}
         <Select value={site} disabled={!!login || busy} onChange={(value) => setSite(value)}>
-          <option value="cn">中国大陆 · CN</option>
-          <option value="intl">国际 · WorkBuddy</option>
-          <option value="intl-codebuddy">国际 · CodeBuddy</option>
+          <option value="cn">{translate("tasks.oauth.siteCn")}</option>
+          <option value="intl">{translate("tasks.oauth.siteIntlWork")}</option>
+          <option value="intl-codebuddy">{translate("tasks.oauth.siteIntlCode")}</option>
         </Select>
       </label>
       <ErrorNotice message={error} />
@@ -100,15 +99,15 @@ export function OAuth({ onClose, onDone }: { onClose: () => void; onDone: () => 
       {login ? (
         <div className={s.actions}>
           <a className={s.linkButton} href={login.url} target="_blank" rel="noopener noreferrer">
-            打开官方授权页面 <Icon name="arrow" />
+            {translate("tasks.oauth.openOfficial")} <Icon name="arrow" />
           </a>
           <button
             onClick={() => {
               setLogin(null);
-              setMessage("已停止查询。");
+              setMessage(translate("tasks.oauth.stoppedQuery"));
             }}
           >
-            停止轮询
+            {translate("tasks.oauth.stopPolling")}
           </button>
         </div>
       ) : (
@@ -126,14 +125,14 @@ export function OAuth({ onClose, onDone }: { onClose: () => void; onDone: () => 
                 if (request.signal.aborted) return;
                 const data = object(res.data);
                 if (typeof data.login_id !== "string" || !data.login_id)
-                  throw new Error("OAuth 响应缺少 login_id");
+                  throw new Error(translate("tasks.oauth.missingLoginId"));
                 const seconds = number(data.expires_in);
                 setLogin({
                   id: data.login_id,
                   url: safeOAuthUrl(data.verification_uri),
                   until: Date.now() + Math.min(seconds ?? 300, 600) * 1000,
                 });
-                setMessage("等待官方授权完成…");
+                setMessage(translate("tasks.oauth.waitingAuth"));
               })
               .catch((err: unknown) => {
                 if (!request.signal.aborted) setError(errorMessage(err));
@@ -143,7 +142,7 @@ export function OAuth({ onClose, onDone }: { onClose: () => void; onDone: () => 
               });
           }}
         >
-          {busy ? "正在发起…" : "发起 OAuth 授权"}
+          {busy ? translate("tasks.oauth.initiating") : translate("tasks.oauth.initiate")}
         </button>
       )}
     </Drawer>
