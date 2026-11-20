@@ -117,3 +117,23 @@ describe("stored language preference", () => {
     expect(serverPreference("klingon")).toBe("system");
   });
 });
+
+describe("localizeMessage", () => {
+  it("translates backend and upstream status messages when English is active", async () => {
+    const { localizeMessage } = await import("./i18n");
+    act(() => chooseLanguage("en"));
+    expect(localizeMessage("今日已签到")).toBe("Already checked in today");
+    expect(localizeMessage("Buddy 空闲")).toBe("Buddy idle");
+    expect(localizeMessage("Buddy 旅行中")).toBe("Buddy traveling");
+    expect(localizeMessage("今日打卡已确认，活跃奖励由官方次日结算")).toBe(
+      "Active check-in confirmed; reward settled by official next day",
+    );
+    expect(localizeMessage("个人版订阅套餐")).toBe("Personal Subscription Plan");
+    expect(localizeMessage("同意已保存；Buddy 空闲")).toBe("Consent saved; Buddy idle");
+
+    act(() => chooseLanguage("zh"));
+    expect(localizeMessage("今日已签到")).toBe("今日已签到");
+    expect(localizeMessage("Buddy 空闲")).toBe("Buddy 空闲");
+    act(() => chooseLanguage("system"));
+  });
+});

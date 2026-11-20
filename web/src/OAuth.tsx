@@ -7,7 +7,7 @@ import s from "./ui.module.scss";
 import { Select } from "./fields";
 
 export function safeOAuthUrl(value: unknown): string {
-  if (typeof value !== "string") throw new Error("OAuth 响应缺少验证链接");
+  if (typeof value !== "string") throw new Error(translate("tasks.oauth.missingLink"));
   const url = new URL(value);
   if (
     url.protocol !== "https:" ||
@@ -22,7 +22,7 @@ export function safeOAuthUrl(value: unknown): string {
       "copilot.tencent.com",
     ].includes(url.hostname)
   )
-    throw new Error("服务返回了不在官方白名单中的 OAuth 链接");
+    throw new Error(translate("tasks.oauth.untrustedLink"));
   return url.href;
 }
 export function OAuth({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
@@ -55,7 +55,7 @@ export function OAuth({ onClose, onDone }: { onClose: () => void; onDone: () => 
         });
         if (abort.signal.aborted) return;
         const data = object(response.data);
-        if (typeof data.done !== "boolean") throw new Error("OAuth 轮询响应缺少 done 状态");
+        if (typeof data.done !== "boolean") throw new Error(translate("tasks.oauth.missingDone"));
         if (data.done) {
           setLogin(null);
           if (data.error) setError(text(data.error));
@@ -125,7 +125,7 @@ export function OAuth({ onClose, onDone }: { onClose: () => void; onDone: () => 
                 if (request.signal.aborted) return;
                 const data = object(res.data);
                 if (typeof data.login_id !== "string" || !data.login_id)
-                  throw new Error("OAuth 响应缺少 login_id");
+                  throw new Error(translate("tasks.oauth.missingLoginId"));
                 const seconds = number(data.expires_in);
                 setLogin({
                   id: data.login_id,
