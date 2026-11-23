@@ -5,7 +5,7 @@ import threading
 
 from fastapi import HTTPException
 
-from app import growth_tasks, perf_metrics, travel, embeddings
+from app import daily_chat, growth_tasks, perf_metrics, travel, embeddings
 from app.model_capabilities import route_metadata
 from app.api_keys import api_principal
 _request_policy = ContextVar("gateway_model_policy", default=None)
@@ -100,7 +100,7 @@ def credential_auto_travel(config, entry, policy=None):
 
 def credential_auto_daily_chat(config, entry, policy=None):
     """A turn spends credits on the account, so international accounts opt in explicitly."""
-    supported = entry.get("profile") == "intl-work"
+    supported = daily_chat.supported(entry.get("profile"))
     return supported and _policy(config, policy)["credentials"].get(entry.get("account_key"), {}).get("auto_daily_chat", False)
 
 
