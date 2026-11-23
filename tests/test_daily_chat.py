@@ -139,11 +139,23 @@ class DailyChatTests(fixtures.CredentialActionTests):
 
     # -- profile gating ------------------------------------------------------
 
-    def test_only_international_workbuddy_accounts_are_supported(self):
+    def test_international_accounts_are_supported(self):
         self.assertEqual(daily_chat.supported("intl-work"), True)
-        for profile in ("intl-cli", "cn-cli", "cn-work"):
+        self.assertEqual(daily_chat.supported("intl-cli"), True)
+        for profile in ("cn-cli", "cn-work"):
             self.assertFalse(daily_chat.supported(profile), profile)
         self.assertTrue(daily_chat.unavailable()["skipped"])
+
+    def test_intl_cli_account_runs_daily_chat_turn(self):
+        result = self.turn(self.entries["intl-cli"])
+        self.assertTrue(result["ok"])
+        self.assertEqual(len(self.console.created), 1)
+
+    def test_daily_chat_reports_telemetry_activity(self):
+        with patch("app.growth_events.report_chat_activity") as mock_report:
+            result = self.turn(self.entries["intl-cli"])
+            self.assertTrue(result["ok"])
+            mock_report.assert_called_once()
 
     def test_domestic_profile_never_reaches_the_console(self):
         self.assertFalse(self.turn(self.entries["cn-work"])["ok"])
@@ -413,6 +425,16 @@ class DailyChatTests(fixtures.CredentialActionTests):
                                      json={"auto_daily_chat": True})
         self.assertEqual(response.status_code, 200, response.text)
         self.assertTrue(converter.model_policy.credential_auto_daily_chat(converter.CONFIG, self.intl))
+
+    def test_intl_cli_preference_can_be_enabled(self):
+        cli_key = self.entries["intl-cli"]["account_key"]
+        row = next(r for r in self.client.get("/admin/credentials").json()["credentials"]
+                   if r["id"] == cli_key)
+        self.assertIs(row["daily_chat_supported"], True)
+        response = self.client.patch("/admin/credentials/" + cli_key,
+                                     json={"auto_daily_chat": True})
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertTrue(converter.model_policy.credential_auto_daily_chat(converter.CONFIG, self.entries["intl-cli"]))
 
     def test_preference_is_rejected_for_domestic_accounts(self):
         response = self.client.patch("/admin/credentials/" + self.entries["cn-work"]["account_key"],

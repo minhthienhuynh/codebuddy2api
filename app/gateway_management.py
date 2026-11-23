@@ -154,7 +154,7 @@ class Management:
             if entry is None:
                 raise HTTPException(404, "凭证不存在")
             if enabled and not daily_chat.supported(entry.get("profile")):
-                raise HTTPException(400, "活跃打卡仅适用于国际 WorkBuddy 账号")
+                raise HTTPException(400, "活跃打卡仅适用于国际版账号")
             self.CONFIG["control_store"].set_auto_daily_chat(identity, enabled)
         # Persist only: enabling never launches a turn; the sweep decides when to run it.
 

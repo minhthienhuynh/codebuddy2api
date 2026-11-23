@@ -40,7 +40,7 @@ TERMINAL_STATES = ("completed",)
 FAILED_STATES = ("failed", "error", "cancelled", "canceled")
 
 _MESSAGES = {
-    "unsupported": "活跃打卡仅适用于国际 WorkBuddy 账号，国内账号及国际 CodeBuddy 不适用",
+    "unsupported": "活跃打卡仅适用于国际版账号（WorkBuddy / CodeBuddy），国内账号不适用",
     "available": "今日尚未打卡，可手动向官方申请每日活跃奖励",
     "done": "今日打卡已确认，活跃奖励由官方次日结算",
     "pending": "上次打卡结果尚未确认，可能仍在执行；今日不重复发送",
@@ -70,7 +70,7 @@ class ChatFailure(ValueError):
 
 
 def supported(profile):
-    return profile == "intl-work"
+    return profile in ("intl-work", "intl-cli")
 
 
 def unavailable():
@@ -316,6 +316,11 @@ def perform(token, profile, *, uid="", domain="", can_write=lambda: True,
             headers = _console_headers(token, uid, domain)
             conversation_id = create_conversation(client, headers)
             result["conversation_id"] = conversation_id
+            from . import growth_events
+            try:
+                growth_events.report_chat_activity(HOST, token, uid, conversation_id, domain=domain or "www.workbuddy.ai")
+            except Exception:
+                pass
             # Record the conversation immediately: if anything fails later, this is
             # what distinguishes "the turn ran" from "nothing ever reached the agent".
             write_store("daily_chat_checkpoint", day, conversation_id=conversation_id)
