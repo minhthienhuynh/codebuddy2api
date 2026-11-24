@@ -1664,6 +1664,38 @@ const zh = {
   "values.used": "已用额度",
   "values.user_agent": "客户端 UA",
   "values.wal_bytes": "WAL 大小",
+  "values.enterprise": "企业账号",
+  "values.enterpriseName": "企业名称",
+  "values.enterprise_id": "企业 ID",
+  "values.product": "产品类型",
+  "values.restricted": "官方限制",
+  "values.restricted_until": "限制截止",
+  "values.auto_disabled": "自动禁用",
+  "values.last_refresh_time": "最近刷新时间",
+  "values.sessions": "会话列表",
+  "values.sticky_sessions": "黏绑会话数",
+  "values.sync": "同步状态",
+  "values.sync_error": "同步错误",
+  "values.usage_stats": "用量统计",
+  "values.models": "可用模型",
+  "values.growth_supported": "支持成长中心",
+  "values.auto_growth": "自动成长任务",
+  "values.growth_auto": "成长任务配置",
+  "values.last_error_body": "最近错误详情",
+  "values.generation": "代次",
+  "values.auth_broken": "认证损坏",
+  "values.catalog": "模型目录",
+  "values.catalog_sync": "目录同步",
+  "values.cooldown": "冷却状态",
+  "values.label": "备注标签",
+  "values.healthy": "健康状态",
+  "values.in_flight": "进行中请求",
+  "values.max_in_flight": "并发上限",
+  "values.model_cooldowns": "模型冷却列表",
+  "values.source": "来源",
+  "values.date": "日期",
+  "values.return_time": "返回时间",
+  "values.day": "打卡日期",
 } satisfies Record<string, string>;
 export type MessageKey = keyof typeof zh;
 
@@ -3381,6 +3413,38 @@ const en: Record<MessageKey, string> = {
   "values.used": "Used Quota",
   "values.user_agent": "Client UA",
   "values.wal_bytes": "WAL Size",
+  "values.enterprise": "Enterprise Account",
+  "values.enterpriseName": "Enterprise Name",
+  "values.enterprise_id": "Enterprise ID",
+  "values.product": "Product Type",
+  "values.restricted": "Restricted by Official",
+  "values.restricted_until": "Restricted Until",
+  "values.auto_disabled": "Auto Disabled",
+  "values.last_refresh_time": "Last Refresh Time",
+  "values.sessions": "Sessions",
+  "values.sticky_sessions": "Sticky Sessions",
+  "values.sync": "Sync Status",
+  "values.sync_error": "Sync Error",
+  "values.usage_stats": "Usage Statistics",
+  "values.models": "Available Models",
+  "values.growth_supported": "Growth Center Supported",
+  "values.auto_growth": "Auto Growth Tasks",
+  "values.growth_auto": "Growth Task Config",
+  "values.last_error_body": "Last Error Details",
+  "values.generation": "Generation",
+  "values.auth_broken": "Auth Broken",
+  "values.catalog": "Model Catalog",
+  "values.catalog_sync": "Catalog Sync",
+  "values.cooldown": "Cooldown State",
+  "values.label": "Label",
+  "values.healthy": "Healthy",
+  "values.in_flight": "In-Flight Requests",
+  "values.max_in_flight": "Max In-Flight",
+  "values.model_cooldowns": "Model Cooldowns",
+  "values.source": "Source",
+  "values.date": "Date",
+  "values.return_time": "Return Time",
+  "values.day": "Check-in Day",
 };
 
 const messages: Record<Lang, Record<string, string>> = { zh, en };
@@ -3718,6 +3782,123 @@ const backendMessageMap: Record<string, string> = {
   返回的不是发布包: "Not a release archive",
   "没有可用于测速的发布包，请先检查更新":
     "No release archive available for speed test; please check for updates first",
+
+  // Travel & Status Fallbacks
+  尚未查询旅行状态: "Travel status not yet queried",
+  "仅支持国际 WorkBuddy 账号，国内账号及国际 CodeBuddy 不适用":
+    "Active check-in and trial rewards only apply to international WorkBuddy accounts",
+  "尚未领取，可手动向官方申请一次性体验积分":
+    "Not yet claimed; you can manually request one-time trial credits",
+  "官方确认该账号已领取，无需重复申请":
+    "Official confirmed account already claimed, no need to reapply",
+  "官方未确认领取成功，资格和额度由官方决定":
+    "Official unconfirmed claim success; eligibility and quota determined by official",
+  "官方未确认本次打卡，资格和额度由官方决定":
+    "Official unconfirmed active check-in; eligibility and quota determined by official",
+  活跃打卡仅适用于国际版账号: "Active check-in only applies to international accounts",
+  "活跃打卡仅适用于国际版账号（WorkBuddy / CodeBuddy），国内账号不适用":
+    "Active check-in only applies to international accounts (WorkBuddy / CodeBuddy)",
+  "该账号不参与成长中心（仅个人账号可用），已停止旅行操作":
+    "Account does not participate in Growth Center (personal accounts only); travel stopped",
+  成长计划仅适用于国内个人账号: "Growth program is only available for domestic personal accounts",
+  成长任务列表获取失败: "Failed to fetch growth tasks",
+  "尚未领取猫猫，请确认首次领取后再派遣":
+    "Buddy not yet claimed; please claim first before dispatching",
+  "没有当前可用的猫猫，请到官方成长中心核验或选择已有 Buddy":
+    "No available Buddy; please verify in official Growth Center or select existing Buddy",
+  "猫猫准备状态未确认，未派遣": "Buddy readiness unconfirmed, dispatch withheld",
+  "猫猫已确认领取，本次未派遣，请查询旅行状态后继续":
+    "Buddy claimed, dispatch withheld; please query travel status before proceeding",
+  "猫猫已领取，后续旅行状态查询失败，未派遣":
+    "Buddy claimed, subsequent travel status query failed, not dispatched",
+  "猫猫资格或状态未确认，未继续操作，请稍后查询核验":
+    "Buddy eligibility/status unconfirmed, halted; please verify later",
+  "首次领猫任务不存在、已锁定或状态不支持，未继续操作":
+    "First Buddy task nonexistent, locked, or unsupported state; halted",
+  "首领操作结果未确认，未派遣；仅查询核验，不会自动重新领取":
+    "Leader operation unconfirmed, not dispatched; query to verify only, will not re-claim",
+  "首领记录或审计无法保存，已停止后续操作，请检查存储状态":
+    "Leader record or audit failed to save, halted; check storage status",
+  "新手任务等待官方状态更新，自动旅行将继续查询，不重复发送对话":
+    "Novice task waiting for official status update; auto-travel will continue polling without repeating chat",
+  "新手任务记录或审计不可用，已停止后续操作": "Novice task record or audit unavailable, halted",
+  "新手任务请求结果未确认，已停止自动重发，请查询官方状态或检查日志":
+    "Novice task result unconfirmed, auto-retry stopped; check official status or logs",
+  "旅行状态记录不可用，已停止后续操作；请先查询核验":
+    "Travel status record unavailable, halted; please query and verify first",
+  "地点配置查询失败，未派出": "Location config query failed, dispatch withheld",
+  "派遣上限状态未知，未派出": "Daily dispatch limit unknown, dispatch withheld",
+  "派遣已确认，后续状态查询失败；勿重复派出":
+    "Dispatch confirmed, subsequent status query failed; do not repeat dispatch",
+  "派遣结果未确认；下次先查询状态": "Dispatch result unconfirmed; query status first next time",
+  "领取已确认，后续状态查询失败，未派出":
+    "Claim confirmed, subsequent status query failed, not dispatched",
+  "领取操作异常，结果未确认；请先核对余额及领取记录，勿重复点击":
+    "Claim operation abnormal, result unconfirmed; verify balance and records, do not repeat",
+  "领取请求超时，官方可能已处理；请先核对余额，勿重复点击":
+    "Claim request timed out, official may have processed; verify balance first, do not repeat",
+  "上次领取结果尚未确认，可能仍在执行；请勿立即重复申请":
+    "Previous claim unconfirmed, may still be executing; do not reapply immediately",
+  "上次首领结果尚未确认或正在退避，请先核验猫猫状态，勿重复领取":
+    "Previous leader result unconfirmed or backing off; verify Buddy status first, do not repeat claim",
+  "官方拒绝派遣：今日派遣已达上限": "Official dispatch rejected: daily dispatch limit reached",
+  "官方拒绝派遣：没有当前可用猫猫，请先领取或选择 Buddy":
+    "Official dispatch rejected: no Buddy available, claim or select Buddy first",
+  "官方拒绝派遣：猫猫已在旅行，请查询最新状态":
+    "Official dispatch rejected: Buddy already traveling, query latest status",
+  "官方拒绝了当前凭证，请刷新 Token 或重新登录后核对":
+    "Official rejected current credential; refresh token or re-login then verify",
+  "官方响应格式无效，未确认领取成功": "Official response format invalid, claim success unconfirmed",
+  "官方响应超过安全大小限制，已停止读取，未确认领取成功":
+    "Official response exceeds safe size limit, aborted reading, claim unconfirmed",
+  "凭证不可用或 Token 刷新失败，未发送领取请求；请先刷新凭证或重新登录":
+    "Credential unavailable or token refresh failed; claim request withheld, refresh token or re-login",
+  "凭证已变化，请刷新核验": "Credential changed, please refresh and verify",
+  "凭证已变化，请刷新核验后重试": "Credential changed, please refresh and retry",
+  "设置或凭证已变化，已停止新手任务后续操作":
+    "Settings or credential changed, novice task operations halted",
+  "设置或凭证已变化，未继续领猫或派遣":
+    "Settings or credential changed, Buddy claim or dispatch halted",
+  "连接官方失败或响应中断，请检查服务器网络、DNS 和代理；勿立即重复申请":
+    "Connection to official failed or interrupted; check network, DNS, and proxy; do not retry immediately",
+  "会话未在限定时间内跑完，今日不重试；请核验账号状态":
+    "Session did not finish within timeout, will not retry today; verify account status",
+  "ACP 通道响应格式无效（缺少连接标识或会话信息），未确认打卡成功，今日不重试":
+    "ACP channel response invalid (missing connection ID or session), check-in unconfirmed, will not retry today",
+  "ACP 通道返回了错误状态，未确认打卡成功，今日不重试":
+    "ACP channel returned error status, check-in unconfirmed, will not retry today",
+  "ACP 通道连接失败或中断，未确认打卡成功，今日不重试":
+    "ACP channel connection failed or interrupted, check-in unconfirmed, will not retry today",
+  后端模型暂时不可用: "Backend model temporarily unavailable",
+  额度不足或未知: "Quota insufficient or unknown",
+  模型额度冷却: "Model quota cooldown",
+  不在绑定范围: "Not in binding range",
+  "凭证仍被模型规则引用，请先移除绑定":
+    "Credential still referenced by model rules, please remove bindings first",
+  该任务暂无自动链: "No automated chain for this task",
+  小橘: "Orange",
+  "；仅查询核验，勿重复操作": "; query to verify only, do not repeat operation",
+  "；凭证已变化，请刷新列表核对原账号":
+    "; credential changed, please refresh list and check original account",
+  "（空消息）": "(Empty message)",
+  "执行失败：": "Execution failed: ",
+  首领奖励领取确认协议: "Leader reward claim confirmation agreement",
+  "自动新手对话需要国内 WorkBuddy 凭证，不借用其他账号或产品身份":
+    "Novice chat requires domestic WorkBuddy credentials; does not borrow other account identity",
+  "同意自动接取并完成 first_buddy 新手任务，再确认官方协议、领取猫猫及派遣。":
+    "Consent to auto-accept first_buddy novice task, confirm official agreement, claim Buddy and dispatch.",
+  "优先零倍率模型，否则使用最低已知倍率模型，可能消耗少量积分。":
+    "Prioritizes 0x rate models, otherwise lowest known rate model; may consume minor credits.",
+  "不调用工具、访问文件、开付费盒子或执行其他奖励任务；结果不确定不重复对话。":
+    "Does not invoke tools, read files, open paid boxes, or perform other tasks; does not repeat on uncertainty.",
+  "必要时向当前账号的 WorkBuddy 发起一次独立文本对话，最多请求 32 个输出 token；":
+    "If necessary, sends one independent text turn to current WorkBuddy, requesting at most 32 output tokens;",
+  登录尚未完成: "Login not yet completed",
+  登录已过期: "Login session expired",
+  "refresh token 已失效，请重新登录": "Refresh token expired, please log in again",
+  凭证不存在: "Credential does not exist",
+  向量与重排序模型不支持聊天倍率探测:
+    "Embedding and rerank models do not support chat rate probing",
 };
 
 const sortedMessageEntries = Object.entries(backendMessageMap).sort(
