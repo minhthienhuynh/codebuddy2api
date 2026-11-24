@@ -1,4 +1,4 @@
-import { t as translate } from "./i18n";
+import { t as translate, localizeMessage, currentLanguage } from "./i18n";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, errorMessage, list, object, text, type Credential, type RecordValue } from "./api";
 import { jobResponse, useJobPolling, type Job } from "./jobs";
@@ -59,15 +59,20 @@ export function useGrowthJobs() {
 
 /** Banner text for the task a growth job is running now. */
 export function describeGrowth(item: RecordValue): string {
-  return translate("tasks.growth.execute", { title: text(item.title ?? item.task_code) });
+  const rawTitle = text(item.title ?? item.task_code);
+  const title = localizeMessage(rawTitle) || rawTitle;
+  return translate("tasks.growth.execute", { title });
 }
 
 function summary(job: Job): string {
   const results = job.results;
   if (!results.length) return translate("tasks.growth.noExecutable");
   if (job.meta.kind === "single")
-    return text(results[0].message) || translate("tasks.growth.executed");
+    return localizeMessage(text(results[0].message)) || translate("tasks.growth.executed");
   const failed = results.filter((row) => row.ok !== true);
+  const lParen = currentLanguage() === "en" ? " (" : "（";
+  const rParen = currentLanguage() === "en" ? ")" : "）";
+  const sep = currentLanguage() === "en" ? ", " : "，";
   return (
     translate("tasks.growth.summary", {
       count: results.length,
@@ -76,8 +81,12 @@ function summary(job: Job): string {
     (failed.length
       ? translate("tasks.growth.uncompleted", {
           items: failed
-            .map((row) => `${text(row.title ?? row.task_code)}（${text(row.message)}）`)
-            .join("，"),
+            .map((row) => {
+              const taskTitle = localizeMessage(text(row.title ?? row.task_code));
+              const taskMsg = localizeMessage(text(row.message));
+              return `${taskTitle}${lParen}${taskMsg}${rParen}`;
+            })
+            .join(sep),
         })
       : "")
   );
@@ -240,55 +249,58 @@ export function GrowthTasks({
             <strong>{groupLabel(group)}</strong>
             {group === "chat" ? translate("tasks.growth.chatAuthWarning") : ""}
           </small>
-          {tasks.map((task) => (
-            <div key={task.task_code} className={s.growthTaskRow}>
-              <label className={s.check}>
-                <input
-                  type="checkbox"
-                  role="switch"
-                  aria-label={translate("tasks.growth.autoTaskAria", {
-                    title: task.title,
-                    name: credential.name ?? credential.id,
-                  })}
-                  checked={view.growth_auto[task.task_code] === true}
-                  disabled={busy || saving || task.claimed}
-                  onChange={(e) => saveSwitches({ [task.task_code]: e.target.checked })}
-                />
-                {task.title}
-              </label>
-              <span className={s.badge}>
-                {`${task.current}/${task.target || "—"}${
-                  task.credit || task.energy ? ` · +${task.credit}c +${task.energy}e` : ""
-                }`}
-              </span>
-              {/* 提示挂在外层：禁用按钮在部分浏览器不触发悬停提示。 */}
-              <span
-                className={s.growthAction}
-                title={
-                  !task.claimed && task.locked
-                    ? translate("tasks.growth.lockedDailyTip")
-                    : undefined
-                }
-              >
-                <button
-                  disabled={busy || running || task.claimed || task.locked}
-                  aria-label={translate("tasks.growth.oneClickAria", {
-                    title: task.title,
-                    name: credential.name ?? credential.id,
-                  })}
-                  onClick={() => run(task.task_code)}
+          {tasks.map((task) => {
+            const localizedTitle = localizeMessage(task.title);
+            return (
+              <div key={task.task_code} className={s.growthTaskRow}>
+                <label className={s.check}>
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    aria-label={translate("tasks.growth.autoTaskAria", {
+                      title: localizedTitle,
+                      name: credential.name ?? credential.id,
+                    })}
+                    checked={view.growth_auto[task.task_code] === true}
+                    disabled={busy || saving || task.claimed}
+                    onChange={(e) => saveSwitches({ [task.task_code]: e.target.checked })}
+                  />
+                  {localizedTitle}
+                </label>
+                <span className={s.badge}>
+                  {`${task.current}/${task.target || "—"}${
+                    task.credit || task.energy ? ` · +${task.credit}c +${task.energy}e` : ""
+                  }`}
+                </span>
+                {/* 提示挂在外层：禁用按钮在部分浏览器不触发悬停提示。 */}
+                <span
+                  className={s.growthAction}
+                  title={
+                    !task.claimed && task.locked
+                      ? translate("tasks.growth.lockedDailyTip")
+                      : undefined
+                  }
                 >
-                  {task.claimed
-                    ? translate("tasks.growth.claimed")
-                    : task.locked
-                      ? translate("tasks.growth.locked")
-                      : currentCode === task.task_code
-                        ? translate("tasks.growth.executing")
-                        : translate("tasks.growth.oneClickComplete")}
-                </button>
-              </span>
-            </div>
-          ))}
+                  <button
+                    disabled={busy || running || task.claimed || task.locked}
+                    aria-label={translate("tasks.growth.oneClickAria", {
+                      title: localizedTitle,
+                      name: credential.name ?? credential.id,
+                    })}
+                    onClick={() => run(task.task_code)}
+                  >
+                    {task.claimed
+                      ? translate("tasks.growth.claimed")
+                      : task.locked
+                        ? translate("tasks.growth.locked")
+                        : currentCode === task.task_code
+                          ? translate("tasks.growth.executing")
+                          : translate("tasks.growth.oneClickComplete")}
+                  </button>
+                </span>
+              </div>
+            );
+          })}
         </div>
       ))}
       <div className={s.credTaskRow}>

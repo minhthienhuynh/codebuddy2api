@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { beforeEach, expect, it, vi } from "vite-plus/test";
 import { Credentials } from "./pages/Credentials";
 import { api, credentialResponse, useResource, type Credential } from "./api";
+import { chooseLanguage } from "./i18n";
 
 vi.mock("./api", async (original) => ({
   ...(await original<typeof import("./api")>()),
@@ -361,4 +362,35 @@ it("shows locked tasks as a disabled button with the unlock hint on hover", asyn
   expect(button).toHaveProperty("disabled", true);
   expect(button.parentElement?.getAttribute("title")).toBe("按官方节奏逐日开放");
   expect(screen.queryByText(/未解锁（/)).toBeNull();
+});
+
+it("localizes growth task titles when English is active", async () => {
+  fixture();
+  const customView = {
+    ...growthView,
+    tasks: [
+      {
+        task_code: "chat_5",
+        title: "完成 5 次对话",
+        description: "",
+        credit: 10,
+        energy: 0,
+        locked: false,
+        accept_status: "accepted",
+        target: 5,
+        current: 3,
+        claimable: false,
+        claimed: false,
+        group: "chat",
+        automatable: true,
+      },
+    ],
+  };
+  vi.spyOn(api, "get").mockResolvedValue({ data: customView } as never);
+  act(() => chooseLanguage("en"));
+  render(<Credentials />);
+  const taskBtn = screen.getAllByRole("button", { name: /Task Config.*cn-work\.info/i })[0];
+  fireEvent.click(taskBtn);
+  expect(await screen.findByText("Complete 5 Conversations")).toBeTruthy();
+  act(() => chooseLanguage("system"));
 });
