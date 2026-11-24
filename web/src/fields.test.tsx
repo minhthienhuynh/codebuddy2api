@@ -3,6 +3,8 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vite-plus/test";
 import { SearchInput, Select } from "./fields";
+import { DataValue } from "./values";
+import { chooseLanguage } from "./i18n";
 
 function Harness({ onChange }: { onChange: (value: string) => void }) {
   const [value, setValue] = useState("b");
@@ -75,5 +77,16 @@ describe("SearchInput", () => {
     rerender(<SearchInput aria-label="搜索" value="glm" onChange={onChange} />);
     fireEvent.click(screen.getByRole("button", { name: "清除搜索" }));
     expect(onChange).toHaveBeenLastCalledWith("");
+  });
+});
+
+describe("DataValue", () => {
+  it("localizes message, error, source, and location strings in English mode", () => {
+    act(() => chooseLanguage("en"));
+    const { container } = render(<DataValue name="message" value="今日已签到" />);
+    expect(container.textContent).toBe("Already checked in today");
+    const pkg = render(<DataValue name="source" value="个人版订阅套餐" />);
+    expect(pkg.container.textContent).toBe("Personal Subscription Plan");
+    act(() => chooseLanguage("system"));
   });
 });

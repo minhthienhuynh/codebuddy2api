@@ -269,4 +269,30 @@ describe("scoped credential buttons", () => {
     await act(async () => fireEvent.click(button));
     expect(patch).toHaveBeenCalledWith("/credentials/one", { enabled: true });
   });
+
+  it("renders active cooldowns and bound models in Bindings & Cooldowns tab", () => {
+    vi.mocked(useResource).mockReturnValue({
+      data: [
+        {
+          id: "one",
+          name: "one.info",
+          enabled: true,
+          profile: "cn-cli",
+          health: "ready",
+          bindings: ["gpt-4o"],
+          cooldowns: [{ model: "claude-3-7-sonnet", remaining_seconds: "120s" }],
+        },
+      ],
+      reload: vi.fn(),
+      loading: false,
+      refreshing: false,
+      error: null,
+    });
+    render(<Credentials />);
+    fireEvent.click(screen.getByRole("button", { name: "详情" }));
+    fireEvent.click(screen.getByRole("tab", { name: "绑定与冷却" }));
+    const drawer = screen.getByRole("dialog");
+    expect(within(drawer).getByText("gpt-4o")).toBeTruthy();
+    expect(within(drawer).getByText(/claude-3-7-sonnet/)).toBeTruthy();
+  });
 });

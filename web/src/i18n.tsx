@@ -3501,6 +3501,15 @@ export function formatDate(date: Date | number, options?: Intl.DateTimeFormatOpt
 }
 
 const backendMessageMap: Record<string, string> = {
+  // General status
+  操作成功: "Operation successful",
+  成功: "Success",
+  请求成功: "Request successful",
+  保存成功: "Saved successfully",
+  更新成功: "Updated successfully",
+  删除成功: "Deleted successfully",
+  执行成功: "Execution successful",
+
   // Check-in
   "签到成功，余额可另行同步": "Check-in succeeded; balance can be synced separately",
   今日已签到: "Already checked in today",
@@ -3510,6 +3519,12 @@ const backendMessageMap: Record<string, string> = {
   当前活动不可参与: "Current activity not eligible",
 
   // Travel & Buddy
+  旅行中: "Traveling",
+  在途: "In transit",
+  已归来: "Returned",
+  已返回: "Returned",
+  未出行: "Not departed",
+  空闲: "Idle",
   "Buddy 空闲": "Buddy idle",
   "Buddy 旅行中": "Buddy traveling",
   "Buddy 已到达，待领取": "Buddy arrived, reward pending",
@@ -3592,13 +3607,49 @@ const backendMessageMap: Record<string, string> = {
     "Enterprise account missing enterprise ID; cannot query quota (skipped personal endpoint to prevent misreporting)",
   积分响应与凭据站点不一致: "Credit response site mismatch with credential site",
 
+  // Travel Locations
+  杭州西湖: "Hangzhou West Lake",
+  厦门鼓浪屿: "Xiamen Gulangyu Island",
+  大理洱海: "Dali Erhai Lake",
+  成都宽窄巷子: "Chengdu Kuanzhai Alley",
+  青岛栈桥: "Qingdao Zhanqiao Pier",
+  北京: "Beijing",
+  深圳: "Shenzhen",
+  上海: "Shanghai",
+  广州: "Guangzhou",
+
   // Quota package names
   个人版订阅套餐: "Personal Subscription Plan",
+  个人版基础包: "Personal Basic Pack",
+  免费体验额度: "Free Trial Quota",
+  个人版拉新权益包: "Personal Referral Pack",
+  个人版国内运营裂变包: "Personal Growth Pack",
+  运营裂变包: "Operations Growth Pack",
+  体验版: "Trial Edition",
+  个人体验版: "Personal Trial Edition",
+  拉新权益: "Referral Benefits",
   新人权益包: "Welcome Package",
   签到奖励: "Check-in Reward",
   旅行奖励: "Travel Reward",
   活动奖励: "Event Reward",
   企业配额: "Enterprise Quota",
+
+  // Growth Tasks
+  "完成 5 次对话": "Complete 5 Conversations",
+  "在 Buddy 应用中聊一次": "Chat Once in Buddy App",
+  "创建 1 个自动化任务": "Create 1 Automation Task",
+  "使用 5 次模板": "Use Templates 5 Times",
+  "使用 1 次技能": "Use Skills Once",
+  "完成 1 次小程序对话": "Complete 1 Mini-Program Chat",
+  "领取首只 Buddy": "Claim First Buddy",
+  每日登录: "Daily Login",
+
+  // Restrictions & Transport
+  上游限制: "Upstream restriction",
+  "官方拒绝派遣：该地点暂时不可用": "Official dispatch rejected: Location temporarily unavailable",
+  写超时重放: "Write timeout replay",
+  建连失败: "Connection failed",
+  网络错误: "Network error",
 
   // Self-update & Version Checks
   "程序目录不可写，无法自动更新": "Program directory is not writable, cannot self-update",
@@ -3647,13 +3698,17 @@ const backendMessageMap: Record<string, string> = {
     "No release archive available for speed test; please check for updates first",
 };
 
+const sortedMessageEntries = Object.entries(backendMessageMap).sort(
+  ([a], [b]) => b.length - a.length,
+);
+
 export function localizeMessage(message: unknown): string {
   if (typeof message !== "string" || !message) return "";
   if (currentLang !== "en") return message;
   const direct = backendMessageMap[message];
   if (direct) return direct;
   let result = message;
-  for (const [zh, en] of Object.entries(backendMessageMap)) {
+  for (const [zh, en] of sortedMessageEntries) {
     if (result.includes(zh)) {
       result = result.replaceAll(zh, en);
     }

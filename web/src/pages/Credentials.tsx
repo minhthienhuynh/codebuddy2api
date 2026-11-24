@@ -1823,6 +1823,31 @@ export function Credentials() {
                           : translate("credentials.card.noExclusiveBinding")}
                       </strong>
                     </div>
+                    <div>
+                      <span>{translate("credentials.detail.bindingsCooldowns")}</span>
+                      <div>
+                        {Array.isArray(liveDetail.cooldowns) ? (
+                          liveDetail.cooldowns.length ? (
+                            <div className={s.credSyncTags}>
+                              {list(liveDetail.cooldowns).map((cooldown, i) => (
+                                <small key={i}>
+                                  {text(cooldown.model)} ·{" "}
+                                  {number(cooldown.until) !== null
+                                    ? `${Math.max(0, Math.ceil(Number(cooldown.until) - now / 1000))}s`
+                                    : text(cooldown.remaining_seconds)}
+                                </small>
+                              ))}
+                            </div>
+                          ) : (
+                            <Badge>{translate("credentials.card.noCooldown")}</Badge>
+                          )
+                        ) : liveDetail.model_cooldowns ? (
+                          <DataValue value={liveDetail.model_cooldowns} />
+                        ) : (
+                          <Badge>{translate("credentials.card.noCooldown")}</Badge>
+                        )}
+                      </div>
+                    </div>
                   </div>
                   <div className={s.rowActions}>
                     <button disabled={busy} onClick={() => maintain("reset-cooldown", liveDetail)}>
