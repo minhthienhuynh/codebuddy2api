@@ -3,6 +3,7 @@ import { beforeEach, expect, it, vi } from "vite-plus/test";
 import { Credentials } from "./pages/Credentials";
 import { api, credentialResponse, useResource, type Credential } from "./api";
 import { TravelSummary } from "./Travel";
+import { chooseLanguage } from "./i18n";
 
 function openRowMenu(credentialName: string) {
   const row = screen
@@ -373,4 +374,11 @@ it("reports a batch run as a toast that lists only the unfinished accounts", asy
   // Refreshing the list clears the report along with the stale rows.
   fireEvent.click(screen.getByRole("button", { name: "刷新列表" }));
   expect(screen.queryByText("已完成 1 · 未完成 1")).toBeNull();
+});
+
+it("localizes travel location in TravelSummary when English is active", () => {
+  act(() => chooseLanguage("en"));
+  const { container } = render(<TravelSummary trip={{ location_name: "杭州西湖" }} />);
+  expect(container.textContent).toContain("Travel location: Hangzhou West Lake");
+  act(() => chooseLanguage("system"));
 });
