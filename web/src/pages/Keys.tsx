@@ -92,7 +92,7 @@ function normalizeModels(value: unknown): ModelOption[] {
   const data = object(value, t("keys.models"));
   const options: ModelOption[] = [{ id: "auto", label: t("keys.auto") }];
   const seen = new Set(options.map((item) => item.id));
-  for (const item of list(data.models, "模型列表")) {
+  for (const item of list(data.models, "model list")) {
     if (typeof item.id !== "string" || seen.has(item.id)) continue;
     seen.add(item.id);
     options.push({

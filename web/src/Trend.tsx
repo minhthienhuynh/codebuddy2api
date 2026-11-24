@@ -1,3 +1,4 @@
+import { t as translate } from "./i18n";
 import { useId, useState, type PointerEvent } from "react";
 import { metric, number, text, type RecordValue } from "./api";
 import { Empty } from "./components";
@@ -157,21 +158,25 @@ export function Trend({
         )}
       </div>
       <p className={s.srOnly} id={`${id}-hint`}>
-        指向或点按查看时段；键盘左右方向键逐点查看，Home 和 End 跳到首尾，Esc 关闭提示。
+        {translate("charts.trend.hint")}
       </p>
       <div className={s.chartAxis}>
         <span>{text(rows[0].date)}</span>
         {rows.length > 1 && <span>{text(rows.at(-1)?.date)}</span>}
       </div>
       <details className={s.chartData}>
-        <summary>查看趋势数据表</summary>
+        <summary>{translate("charts.trend.viewTable")}</summary>
         <table>
           <thead>
             <tr>
-              <th>{granularity === "hour" ? "时段（UTC）" : "日期（UTC）"}</th>
-              <th>请求</th>
-              <th>成功</th>
-              <th>失败</th>
+              <th>
+                {granularity === "hour"
+                  ? translate("charts.th.timeUtc")
+                  : translate("charts.th.dateUtc")}
+              </th>
+              <th>{translate("charts.th.requests")}</th>
+              <th>{translate("charts.th.success")}</th>
+              <th>{translate("charts.th.failure")}</th>
             </tr>
           </thead>
           <tbody>

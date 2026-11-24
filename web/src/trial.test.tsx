@@ -3,6 +3,7 @@ import { beforeEach, expect, it, vi } from "vite-plus/test";
 import { Trial } from "./Trial";
 import { Credentials } from "./pages/Credentials";
 import { api, useResource } from "./api";
+import { chooseLanguage } from "./i18n";
 
 function openRowMenu(credentialName: string) {
   const row = screen
@@ -160,4 +161,11 @@ it("ignores late responses after unmount and aborts the browser request", async 
   expect(signal?.aborted).toBe(true);
   await act(async () => finish({ data: { results: [{ id: "intl", ...available }] } }));
   expect(onDone).not.toHaveBeenCalled();
+});
+
+it("localizes status message in Trial drawer when English is active", () => {
+  act(() => chooseLanguage("en"));
+  const view = render(<Trial credential={credential} onClose={vi.fn()} onDone={vi.fn()} />);
+  expect(view.getByText("Available for manual claim")).toBeTruthy();
+  act(() => chooseLanguage("system"));
 });

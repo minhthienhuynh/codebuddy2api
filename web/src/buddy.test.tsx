@@ -3,6 +3,7 @@ import { beforeEach, expect, it, vi } from "vite-plus/test";
 import { Buddy, buddyConfirmation } from "./Buddy";
 import { Credentials } from "./pages/Credentials";
 import { api, useResource } from "./api";
+import { chooseLanguage } from "./i18n";
 
 function openRowMenu(credentialName: string) {
   const row = screen
@@ -220,4 +221,26 @@ it("shows partial completion when checkin succeeds but Buddy prerequisites block
   expect(screen.getByText("部分完成")).toBeTruthy();
   expect(screen.queryByText("已完成")).toBeNull();
   expect(screen.queryByRole("dialog")).toBeNull();
+});
+
+it("localizes status message in Buddy drawer when English is active", () => {
+  const confirmation = {
+    can_claim: true,
+    revision: "a".repeat(64),
+    title: "Buddy Title",
+    terms: ["term 1"],
+    authorization: "auth",
+  };
+  act(() => chooseLanguage("en"));
+  const view = render(
+    <Buddy
+      credential={credential}
+      initial={{ ok: true, message: "Buddy 空闲" }}
+      confirmation={confirmation}
+      onClose={vi.fn()}
+      onDone={vi.fn()}
+    />,
+  );
+  expect(view.getByText("Buddy idle")).toBeTruthy();
+  act(() => chooseLanguage("system"));
 });
