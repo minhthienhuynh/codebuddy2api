@@ -6,16 +6,30 @@ if (!window.PointerEvent) window.PointerEvent = MouseEvent as typeof PointerEven
 
 // Node 22 defines an experimental globalThis.localStorage that throws in jsdom without --localstorage-file.
 const store = new Map<string, string>();
-const memoryStorage = {
-  getItem: (key: string) => store.get(key) ?? null,
-  setItem: (key: string, value: string) => store.set(key, String(value)),
-  removeItem: (key: string) => store.delete(key),
-  clear: () => store.clear(),
-  get length() {
+Object.assign(Storage.prototype, {
+  getItem(key: string) {
+    return store.get(key) ?? null;
+  },
+  setItem(key: string, value: string) {
+    store.set(key, String(value));
+  },
+  removeItem(key: string) {
+    store.delete(key);
+  },
+  clear() {
+    store.clear();
+  },
+  key(index: number) {
+    return Array.from(store.keys())[index] ?? null;
+  },
+});
+Object.defineProperty(Storage.prototype, "length", {
+  get() {
     return store.size;
   },
-  key: (index: number) => Array.from(store.keys())[index] ?? null,
-};
+  configurable: true,
+});
+const memoryStorage = Object.create(Storage.prototype);
 try {
   Object.defineProperty(window, "localStorage", {
     value: memoryStorage,
