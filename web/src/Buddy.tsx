@@ -1,4 +1,4 @@
-import { t as translate } from "./i18n";
+import { t as translate, localizeMessage, currentLanguage } from "./i18n";
 import { useEffect, useRef, useState } from "react";
 import { api, errorMessage, list, object, text, type Credential } from "./api";
 import { Drawer, ErrorNotice } from "./components";
@@ -81,8 +81,10 @@ export function Buddy({
         onDone(result);
       }
     } catch (error) {
-      if (!abort.signal.aborted)
-        setError(`${errorMessage(error)}；${translate("tasks.buddy.failureNote")}`);
+      if (!abort.signal.aborted) {
+        const sep = currentLanguage() === "en" ? "; " : "；";
+        setError(`${errorMessage(error)}${sep}${translate("tasks.buddy.failureNote")}`);
+      }
     } finally {
       controller.current = null;
       if (!abort.signal.aborted) setBusy(false);
@@ -93,7 +95,7 @@ export function Buddy({
       <p>
         <strong>{credential.name ?? credential.id}</strong>
       </p>
-      <p role="status">{text(status.message)}</p>
+      <p role="status">{localizeMessage(text(status.message))}</p>
       <TravelSummary trip={status} />
       <p className={s.note}>{confirmation.authorization}</p>
       <h3>{confirmation.title}</h3>

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api, credentialResponse, errorMessage, list, object, type Credential } from "./api";
 import { Badge, Drawer, ErrorNotice } from "./components";
-import { t as translate, formatDate, currentLanguage } from "./i18n";
+import { t as translate, formatDate, currentLanguage, localizeMessage } from "./i18n";
 import s from "./ui.module.scss";
 
 type TrialResult = {
@@ -118,7 +118,7 @@ export function Trial({
               ? translate("tasks.trial.statusClaimed")
               : translate("tasks.trial.statusUnconfirmed")}
         </Badge>
-        {!failed && <p>{status.message}</p>}
+        {!failed && <p>{localizeMessage(status.message)}</p>}
         {busy && (
           <p>
             {busy === "claim"
@@ -127,7 +127,7 @@ export function Trial({
           </p>
         )}
       </div>
-      <ErrorNotice message={error ?? (failed ? status.message : null)} />
+      <ErrorNotice message={error ?? (failed ? localizeMessage(status.message) : null)} />
       {(status.status != null || status.code != null) && (
         <p className={s.note}>
           {translate("tasks.trial.httpStatus")}
