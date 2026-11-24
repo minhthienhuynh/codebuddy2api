@@ -1,5 +1,5 @@
 import { metric, type RecordValue } from "./api";
-import { t as translate, formatDate, currentLanguage, type MessageKey } from "./i18n";
+import { t as translate, formatDate, currentLanguage, localizeMessage, type MessageKey } from "./i18n";
 import s from "./ui.module.scss";
 
 const labels: Record<string, string> = {
@@ -523,7 +523,8 @@ export function DataValue({
                     ? translate("values.consent.environment")
                     : value
                 : undefined;
-    return <span className={s.valueText}>{label ?? (value || "—")}</span>;
+    const display = label ?? (currentLanguage() === "en" ? localizeMessage(value) : value);
+    return <span className={s.valueText}>{display || "—"}</span>;
   }
   if (typeof value !== "object")
     return <span className={s.valueMuted}>{translate("values.unknown")}</span>;
