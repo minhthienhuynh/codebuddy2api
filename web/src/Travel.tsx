@@ -1,4 +1,4 @@
-import { t as translate } from "./i18n";
+import { t as translate, localizeMessage } from "./i18n";
 import { DataValue } from "./values";
 
 export function TravelSummary({ trip }: { trip: Record<string, unknown> | null }) {
@@ -17,7 +17,7 @@ export function TravelSummary({ trip }: { trip: Record<string, unknown> | null }
   return (
     <>
       {typeof trip.location_name === "string" && trip.location_name && (
-        <small>{translate("tasks.travel.location", { name: trip.location_name })}</small>
+        <small>{translate("tasks.travel.location", { name: localizeMessage(trip.location_name) })}</small>
       )}
       {minutes !== null && (
         <small>
