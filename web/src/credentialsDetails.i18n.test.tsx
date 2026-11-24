@@ -351,4 +351,94 @@ describe("Credentials details modal i18n", () => {
     const chinese = text.match(/[\u4e00-\u9fff]/g) ?? [];
     expect(chinese).toEqual([]);
   });
+
+  it("contains zero Chinese characters when refreshing credential in English mode", async () => {
+    vi.spyOn(api, "post").mockImplementation(async (path: string) => {
+      if (path.includes("/refresh")) {
+        return {
+          data: {
+            ok: true,
+            results: [
+              {
+                id: "cred-1",
+                name: "test-account.info",
+                action: "refresh",
+                ok: true,
+                message: "凭证已刷新",
+              },
+            ],
+          },
+        };
+      }
+      return { data: {} };
+    });
+
+    render(
+      <LanguageProvider>
+        <Credentials />
+      </LanguageProvider>,
+    );
+
+    const detailsBtn = screen.getByRole("button", { name: /Details|详情/i });
+    await act(async () => {
+      fireEvent.click(detailsBtn);
+    });
+
+    const dialog = screen.getByRole("dialog");
+    const refreshBtn = within(dialog).getByRole("button", {
+      name: /Refresh Credential|Refresh Token|刷新凭证/i,
+    });
+    await act(async () => {
+      fireEvent.click(refreshBtn);
+    });
+
+    const text = document.body.textContent ?? "";
+    const chinese = text.match(/[\u4e00-\u9fff]/g) ?? [];
+    expect(chinese).toEqual([]);
+  });
+
+  it("contains zero Chinese characters when credential refresh fails in English mode", async () => {
+    vi.spyOn(api, "post").mockImplementation(async (path: string) => {
+      if (path.includes("/refresh")) {
+        return {
+          data: {
+            ok: false,
+            results: [
+              {
+                id: "cred-1",
+                name: "test-account.info",
+                action: "refresh",
+                ok: false,
+                message: "操作失败（TokenRefreshRejected），保留已有数据；请检查账号状态后重试",
+              },
+            ],
+          },
+        };
+      }
+      return { data: {} };
+    });
+
+    render(
+      <LanguageProvider>
+        <Credentials />
+      </LanguageProvider>,
+    );
+
+    const detailsBtn = screen.getByRole("button", { name: /Details|详情/i });
+    await act(async () => {
+      fireEvent.click(detailsBtn);
+    });
+
+    const dialog = screen.getByRole("dialog");
+    const refreshBtn = within(dialog).getByRole("button", {
+      name: /Refresh Credential|Refresh Token|刷新凭证/i,
+    });
+    await act(async () => {
+      fireEvent.click(refreshBtn);
+    });
+
+    const text = document.body.textContent ?? "";
+    const chinese = text.match(/[\u4e00-\u9fff]/g) ?? [];
+    expect(chinese).toEqual([]);
+  });
 });
