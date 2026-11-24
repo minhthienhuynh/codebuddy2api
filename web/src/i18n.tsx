@@ -3501,6 +3501,15 @@ export function formatDate(date: Date | number, options?: Intl.DateTimeFormatOpt
 }
 
 const backendMessageMap: Record<string, string> = {
+  // General status
+  操作成功: "Operation successful",
+  成功: "Success",
+  请求成功: "Request successful",
+  保存成功: "Saved successfully",
+  更新成功: "Updated successfully",
+  删除成功: "Deleted successfully",
+  执行成功: "Execution successful",
+
   // Check-in
   "签到成功，余额可另行同步": "Check-in succeeded; balance can be synced separately",
   今日已签到: "Already checked in today",
@@ -3510,6 +3519,12 @@ const backendMessageMap: Record<string, string> = {
   当前活动不可参与: "Current activity not eligible",
 
   // Travel & Buddy
+  旅行中: "Traveling",
+  在途: "In transit",
+  已归来: "Returned",
+  已返回: "Returned",
+  未出行: "Not departed",
+  空闲: "Idle",
   "Buddy 空闲": "Buddy idle",
   "Buddy 旅行中": "Buddy traveling",
   "Buddy 已到达，待领取": "Buddy arrived, reward pending",
@@ -3683,13 +3698,17 @@ const backendMessageMap: Record<string, string> = {
     "No release archive available for speed test; please check for updates first",
 };
 
+const sortedMessageEntries = Object.entries(backendMessageMap).sort(
+  ([a], [b]) => b.length - a.length,
+);
+
 export function localizeMessage(message: unknown): string {
   if (typeof message !== "string" || !message) return "";
   if (currentLang !== "en") return message;
   const direct = backendMessageMap[message];
   if (direct) return direct;
   let result = message;
-  for (const [zh, en] of Object.entries(backendMessageMap)) {
+  for (const [zh, en] of sortedMessageEntries) {
     if (result.includes(zh)) {
       result = result.replaceAll(zh, en);
     }

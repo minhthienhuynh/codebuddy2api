@@ -17,7 +17,9 @@ export function TravelSummary({ trip }: { trip: Record<string, unknown> | null }
   return (
     <>
       {typeof trip.location_name === "string" && trip.location_name && (
-        <small>{translate("tasks.travel.location", { name: localizeMessage(trip.location_name) })}</small>
+        <small>
+          {translate("tasks.travel.location", { name: localizeMessage(trip.location_name) })}
+        </small>
       )}
       {minutes !== null && (
         <small>

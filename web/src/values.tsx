@@ -1,5 +1,11 @@
 import { metric, type RecordValue } from "./api";
-import { t as translate, formatDate, currentLanguage, localizeMessage, type MessageKey } from "./i18n";
+import {
+  t as translate,
+  formatDate,
+  currentLanguage,
+  localizeMessage,
+  type MessageKey,
+} from "./i18n";
 import s from "./ui.module.scss";
 
 const labels: Record<string, string> = {
