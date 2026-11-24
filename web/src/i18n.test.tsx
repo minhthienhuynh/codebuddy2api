@@ -179,6 +179,14 @@ describe("localizeMessage", () => {
     expect(localizeMessage("无法连接")).toBe("Connection failed");
     expect(localizeMessage("返回的不是发布包")).toBe("Not a release archive");
 
+    expect(localizeMessage("杭州西湖")).toBe("Hangzhou West Lake");
+    expect(localizeMessage("北京")).toBe("Beijing");
+    expect(localizeMessage("个人版基础包")).toBe("Personal Basic Pack");
+    expect(localizeMessage("运营裂变包")).toBe("Operations Growth Pack");
+    expect(localizeMessage("完成 5 次对话")).toBe("Complete 5 Conversations");
+    expect(localizeMessage("每日登录")).toBe("Daily Login");
+    expect(localizeMessage("上游限制 11140")).toBe("Upstream restriction 11140");
+
     act(() => chooseLanguage("zh"));
     expect(localizeMessage("今日已签到")).toBe("今日已签到");
     expect(localizeMessage("Buddy 空闲")).toBe("Buddy 空闲");
