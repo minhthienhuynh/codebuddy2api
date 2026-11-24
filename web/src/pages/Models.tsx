@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { t as translate, currentLanguage, useT } from "../i18n";
 import {
   api,
   catalogScanResponse,
@@ -58,20 +59,25 @@ import { JobBanner, ProgressBanner, type Job } from "../jobs";
 import s from "../ui.module.scss";
 import { SearchInput, Select } from "../fields";
 import { clearToasts, notify } from "../toast";
-import { useT } from "../i18n";
+const t = translate;
 export const profiles = ["cn-cli", "cn-work", "intl-cli", "intl-work"];
-const mediaKindLabels: Record<string, string> = { image: "文生图", edit: "图生图", video: "视频" };
+export function mediaKindLabel(kind: string): string {
+  if (kind === "image") return translate("models.media.image");
+  if (kind === "edit") return translate("models.media.edit");
+  if (kind === "video") return translate("models.media.video");
+  return kind;
+}
 const validId = (id: string) => /^[A-Za-z0-9_.:/@-]{1,160}$/.test(id) && ![".", ".."].includes(id);
 export function validateRule(
   rule: ModelRule,
   models: ModelRule[],
-  translate: (key: string) => string = (key) => key,
+  translate: (key: string) => string = t,
 ): string | null {
-  if (!rule.public_id.trim()) return "对外 ID 不能为空";
+  if (!rule.public_id.trim()) return translate("models.valid.idRequired");
   if (rule.public_id !== rule.public_id.trim() || /\s/.test(rule.public_id))
-    return "对外 ID 不能包含空白字符";
-  if (!validId(rule.public_id)) return "对外 ID 只允许 1–160 位字母、数字及 _ . : / @ -";
-  if (!validId(rule.upstream_id ?? rule.id)) return "上游 ID 不能为空，且须为有效模型标识";
+    return translate("models.valid.idWhitespace");
+  if (!validId(rule.public_id)) return translate("models.valid.idPattern");
+  if (!validId(rule.upstream_id ?? rule.id)) return translate("models.valid.upstreamRequired");
   if (rule.routes) {
     if (!rule.routes.length) return translate("models.routes.invalidEmpty");
     const routeIds = new Set<string>();
@@ -95,13 +101,15 @@ export function validateRule(
       (m) => m.id !== rule.id && (m.id === rule.public_id || m.public_id === rule.public_id),
     )
   )
-    return "对外 ID 与已有模型或别名冲突";
+    return translate("models.valid.conflict");
   if (rule.credential_ids.length && (rule.region || rule.profile))
-    return "指定账号与区域/产品范围只能选择一种";
-  if (rule.region && !["cn", "intl"].includes(rule.region)) return "区域无效";
-  if (rule.profile && !profiles.includes(rule.profile)) return "产品无效";
+    return translate("models.valid.scopeConflict");
+  if (rule.region && !["cn", "intl"].includes(rule.region))
+    return translate("models.valid.regionInvalid");
+  if (rule.profile && !profiles.includes(rule.profile))
+    return translate("models.valid.profileInvalid");
   if (rule.region && rule.profile && !rule.profile.startsWith(`${rule.region}-`))
-    return "区域与产品不匹配";
+    return translate("models.valid.mismatch");
   return null;
 }
 type Mode = "auto" | "accounts" | "region" | "legacy";
@@ -116,12 +124,15 @@ type Preview = { candidates: RecordValue[]; excluded: RecordValue[] } & Pick<
 function RoutePreview({ preview }: { preview: Preview }) {
   return (
     <Panel
-      title="路由预览"
-      hint={`${preview.candidates.length} 个候选 · ${preview.excluded.length} 个不可用`}
+      title={t("models.routePreview.title")}
+      hint={t("models.routePreview.hint", {
+        candidates: preview.candidates.length,
+        excluded: preview.excluded.length,
+      })}
     >
       <div className={s.routePreview}>
         {!preview.candidates.length && (
-          <p className={s.note}>当前没有可用候选。保存不会授权范围外的账号，也不会绕过账号目录。</p>
+          <p className={s.note}>{t("models.routePreview.noCandidatesNote")}</p>
         )}
         {[
           ...preview.candidates.map((row) => ({ row, allowed: true })),
@@ -129,13 +140,21 @@ function RoutePreview({ preview }: { preview: Preview }) {
         ].map(({ row, allowed }, i) => (
           <div className={s.routeCandidate} key={i}>
             <div>
-              <strong>{typeof row.name === "string" ? row.name : "未命名账号"}</strong>
+              <strong>
+                {typeof row.name === "string" ? row.name : t("models.routePreview.unnamedAccount")}
+              </strong>
               <small>
-                {typeof row.profile === "string" ? profileLabel(row.profile) : "产品未知"}
+                {typeof row.profile === "string"
+                  ? profileLabel(row.profile)
+                  : t("models.routePreview.productUnknown")}
               </small>
             </div>
             <Badge tone={allowed ? "good" : "warn"}>
-              {allowed ? "候选" : typeof row.reason === "string" ? row.reason : "不可用"}
+              {allowed
+                ? t("models.routePreview.candidate")
+                : typeof row.reason === "string"
+                  ? row.reason
+                  : t("models.routePreview.unavailable")}
             </Badge>
           </div>
         ))}
@@ -163,13 +182,15 @@ function RateCell({ model }: { model: ModelRule }) {
     if (unpriced)
       return (
         <div className={s.rateStack} title={measuredNote(unpriced[1])}>
-          <span className={`${s.rateChip} ${s.rateMeasured}`}>实测计费 · 倍率待估</span>
+          <span className={`${s.rateChip} ${s.rateMeasured}`}>
+            {translate("models.rates.measuredPending")}
+          </span>
         </div>
       );
     return (
       <>
         <DataValue value={model.credits} />
-        <small className={s.specNote}>产品倍率未知</small>
+        <small className={s.specNote}>{translate("models.rates.profileUnknown")}</small>
       </>
     );
   }
@@ -179,11 +200,11 @@ function RateCell({ model }: { model: ModelRule }) {
   );
   const label = (value: number, kind: RateSource) =>
     kind === "measured"
-      ? `≈${formatEstimate(value)} · 实测计费`
+      ? translate("models.rates.measuredWithVal", { val: formatEstimate(value) })
       : kind === "manual"
-        ? `${formatEstimate(value)} · 手填`
+        ? translate("models.rates.manualWithVal", { val: formatEstimate(value) })
         : value === 0
-          ? "限时免费 0x"
+          ? translate("models.rates.free0x")
           : formatRate(value);
   return (
     <div className={s.rateStack}>
@@ -199,7 +220,7 @@ function RateCell({ model }: { model: ModelRule }) {
           source === "measured" && headline
             ? measuredNote(details[headline])
             : source === "manual"
-              ? "管理员手填倍率，路由与 /v1/models 以此为准"
+              ? translate("models.rates.manualTooltip")
               : undefined
         }
       >
@@ -214,13 +235,14 @@ function RateCell({ model }: { model: ModelRule }) {
             key={profile}
             title={kind === "measured" ? measuredNote(details[profile]) : undefined}
           >
-            {profileLabel(profile)} {value === null ? "未知" : label(value, kind)}
+            {profileLabel(profile)}{" "}
+            {value === null ? translate("values.unknown") : label(value, kind)}
           </small>
         );
       })}
       {unpriced && headline !== unpriced[0] && (
         <small className={s.rateProfile} title={measuredNote(unpriced[1])}>
-          {profileLabel(unpriced[0])} 实测计费 · 倍率待估
+          {profileLabel(unpriced[0])} {translate("models.rates.measuredPending")}
         </small>
       )}
     </div>
@@ -286,7 +308,9 @@ export function ModelEditor({
   const run = (save: boolean) => {
     const invalid =
       validateRule(rule, models, t) ??
-      (mode === "accounts" && !rule.credential_ids.length ? "请选择至少一个账号" : null);
+      (mode === "accounts" && !rule.credential_ids.length
+        ? t("models.form.selectAccountRequired")
+        : null);
     if (invalid) {
       setError(invalid);
       return;
@@ -321,7 +345,7 @@ export function ModelEditor({
         if (save) {
           const result = object(response.data);
           if (!Number.isInteger(result.revision) || Number(result.revision) <= revision)
-            throw new Error("后端未确认模型保存，请刷新后核验");
+            throw new Error(translate("models.error.saveNotConfirmed"));
           onSaved();
           onClose();
         } else {
@@ -343,11 +367,12 @@ export function ModelEditor({
       });
   };
   return (
-    <Drawer title={creating ? "新增模型" : "编辑模型规则"} onClose={onClose} dismissDisabled={busy}>
-      <p className={s.note}>
-        对外 ID 供客户端使用，上游 ID
-        是发送给官方后端的模型名称。两者独立，账号能力与额度校验仍然生效。
-      </p>
+    <Drawer
+      title={creating ? translate("models.drawer.addTitle") : translate("models.drawer.editTitle")}
+      onClose={onClose}
+      dismissDisabled={busy}
+    >
+      <p className={s.note}>{t("models.form.idDescription")}</p>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -357,23 +382,23 @@ export function ModelEditor({
         <fieldset className={s.formFields} disabled={busy}>
           <div className={s.formGrid}>
             <label className={s.field}>
-              对外 ID
+              {t("values.public_id")}
               <input
                 value={rule.public_id}
                 required
                 maxLength={160}
-                placeholder="例如 my-coding-model"
+                placeholder={translate("models.drawer.publicIdPlaceholder")}
                 onChange={(e) => update("public_id", e.target.value)}
               />
             </label>
             <label className={s.field}>
-              上游 ID
+              {t("values.upstream_id")}
               <input
                 value={rule.upstream_id}
                 required
                 maxLength={160}
                 list={suggestions}
-                placeholder="实际调用的模型 ID"
+                placeholder={translate("models.drawer.upstreamIdPlaceholder")}
                 onChange={(e) => update("upstream_id", e.target.value)}
               />
             </label>
@@ -393,7 +418,7 @@ export function ModelEditor({
                     <input
                       value={route.upstream_id}
                       list={suggestions}
-                      placeholder="上游模型 ID"
+                      placeholder={translate("models.drawer.upstreamIdPlaceholder")}
                       onChange={(e) =>
                         update(
                           "routes",
@@ -490,7 +515,7 @@ export function ModelEditor({
                 checked={rule.enabled}
                 onChange={(e) => update("enabled", e.target.checked)}
               />
-              启用模型
+              {translate("models.drawer.enableModel")}
             </label>
             {!creating && !model.custom && (
               <label className={s.check}>
@@ -499,18 +524,18 @@ export function ModelEditor({
                   checked={rule.keep_original}
                   onChange={(e) => update("keep_original", e.target.checked)}
                 />
-                同时保留原模型 ID
+                {translate("models.drawer.keepOriginal")}
               </label>
             )}
           </div>
           <fieldset className={s.fieldset}>
-            <legend>选择路由方式</legend>
+            <legend>{translate("models.drawer.routeMode")}</legend>
             <div className={s.routeModes}>
               {(
                 [
-                  ["auto", "自动选择", "按现有账号能力选路"],
-                  ["accounts", "指定账号", "只使用选中的账号"],
-                  ["region", "指定区域", "仅从该区域中选择"],
+                  ["auto", t("models.binding.auto"), t("models.binding.autoDesc")],
+                  ["accounts", t("models.binding.accounts"), t("models.binding.accountsDesc")],
+                  ["region", t("models.binding.region"), t("models.binding.regionDesc")],
                 ] as const
               ).map(([value, label, hint]) => (
                 <label
@@ -531,17 +556,15 @@ export function ModelEditor({
                 </label>
               ))}
             </div>
-            <p>账号与区域二选一，切换方式会清除另一种绑定；不可用时不越界回退。</p>
+            <p>{t("models.binding.switchNote")}</p>
           </fieldset>
           {mode === "legacy" && (
-            <div className={s.warning}>
-              旧规则同时设置了账号和区域。当前仍按原交集执行，请明确选择一种路由方式后再保存。
-            </div>
+            <div className={s.warning}>{t("models.binding.legacyWarning")}</div>
           )}
           {mode === "region" && (
             <div className={s.formGrid}>
               <label className={s.field}>
-                区域
+                {t("values.region")}
                 <Select
                   value={rule.region || (rule.profile.startsWith("intl-") ? "intl" : "cn")}
                   onChange={(value) => {
@@ -554,14 +577,14 @@ export function ModelEditor({
                     setPreview(null);
                   }}
                 >
-                  <option value="cn">中国大陆 · CN</option>
-                  <option value="intl">国际 · INTL</option>
+                  <option value="cn">{translate("tasks.oauth.siteCn")}</option>
+                  <option value="intl">{translate("tasks.oauth.siteIntl")}</option>
                 </Select>
               </label>
               <label className={s.field}>
-                产品
+                {t("values.profile")}
                 <Select value={rule.profile} onChange={(value) => update("profile", value)}>
-                  <option value="">不限产品</option>
+                  <option value="">{translate("models.drawer.anyProfile")}</option>
                   {profiles
                     .filter((p) => !rule.region || p.startsWith(`${rule.region}-`))
                     .map((p) => (
@@ -575,11 +598,11 @@ export function ModelEditor({
           )}
           {mode === "accounts" && (
             <fieldset className={s.fieldset}>
-              <legend>指定凭证</legend>
+              <legend>{translate("models.drawer.specifyCreds")}</legend>
               {credentials === null ? (
-                <p>凭证列表未加载，现有绑定保持不变。</p>
+                <p>{t("models.binding.unloadedNote")}</p>
               ) : !credentials.length ? (
-                <p>暂无账号，请先在凭证管理添加。</p>
+                <p>{t("models.binding.noAccountsNote")}</p>
               ) : (
                 credentials.map((c) => (
                   <label className={s.accountChoice} key={c.id}>
@@ -598,10 +621,12 @@ export function ModelEditor({
                     <span>
                       <strong>{c.name ?? c.id}</strong>
                       <small>
-                        {typeof c.profile === "string" ? profileLabel(c.profile) : "产品未知"}
+                        {typeof c.profile === "string"
+                          ? profileLabel(c.profile)
+                          : t("models.routePreview.productUnknown")}
                       </small>
                     </span>
-                    {c.enabled === false && <Badge tone="warn">已停用</Badge>}
+                    {c.enabled === false && <Badge tone="warn">{t("models.badge.disabled")}</Badge>}
                   </label>
                 ))
               )}
@@ -619,7 +644,7 @@ export function ModelEditor({
                         )
                       }
                     />
-                    {id} · 未在当前列表中
+                    {id} · {t("models.binding.notInList")}
                   </label>
                 ))}
             </fieldset>
@@ -637,10 +662,14 @@ export function ModelEditor({
         <ErrorNotice message={error} />
         <div className={s.actions}>
           <button type="button" disabled={busy} onClick={() => run(false)}>
-            预览候选路由
+            {translate("models.drawer.previewCandidateRoutes")}
           </button>
           <button className={s.primary} disabled={busy}>
-            {busy ? "处理中…" : creating ? "创建模型" : "保存规则"}
+            {busy
+              ? translate("models.drawer.processing")
+              : creating
+                ? translate("models.drawer.createModel")
+                : translate("models.drawer.saveRule")}
           </button>
         </div>
       </form>
@@ -722,40 +751,57 @@ function matchesCatalog(model: ModelRule, query: string, filter: CatalogFilter):
   return true;
 }
 function rateProbeTitle(job: Job) {
-  return job.meta.scope === "all" ? "一键检测倍率" : `倍率探测 · ${text(job.meta.scope)}`;
+  return job.meta.scope === "all"
+    ? translate("models.actions.probeAllRates")
+    : translate("models.actions.probeScopeRates", { scope: text(job.meta.scope) });
 }
 function notifyRateProbe(job: Job) {
   notify({
     key: "rate-probe",
     tone: (number(job.meta.failed) ?? 0) > 0 ? "warn" : "good",
-    title: `${rateProbeTitle(job)}已完成`,
+    title: translate("models.actions.probeCompleted", { title: rateProbeTitle(job) }),
     body: (
       <span>
         {job.total
-          ? `实测计费 ${text(job.meta.billed)} · 确认免费 ${text(job.meta.free)} · 失败 ${text(job.meta.failed)}`
-          : "没有目录声明 0x 的模型"}
+          ? translate("models.actions.probeStats", {
+              billed: text(job.meta.billed),
+              free: text(job.meta.free),
+              failed: text(job.meta.failed),
+            })
+          : translate("models.actions.noFreeModels")}
       </span>
     ),
   });
 }
 const scanSummary = (scan: CatalogScan) =>
-  `成功 ${scan.success} · 失败 ${scan.failed} · 目录差异 ${scan.differences}`;
+  translate("models.actions.scanStats", {
+    success: scan.success,
+    failed: scan.failed,
+    differences: scan.differences,
+  });
 function notifyScan(scan: CatalogScan) {
   const versions = Object.entries(scan.profiles)
     .filter(([, row]) => row.distinct > 1)
-    .map(([name, row]) => `${name}：${row.distinct} 组目录版本`)
-    .join("；");
+    .map(
+      ([name, row]) =>
+        `${name}${currentLanguage() === "en" ? ": " : "："}${translate("models.actions.catalogVersions", { count: row.distinct })}`,
+    )
+    .join(currentLanguage() === "en" ? "; " : "；");
   const failed = scan.status === "failed";
   notify({
     key: "scan",
     tone: failed ? "bad" : scan.failed > 0 ? "warn" : "good",
-    title: failed ? "全量扫描失败" : "全量扫描已完成",
+    title: failed
+      ? translate("models.actions.scanFailed")
+      : translate("models.actions.scanCompleted"),
     body: (
       <>
         <span>{scanSummary(scan)}</span>
         {failed && scan.error && <span>{scan.error}</span>}
         {versions && <span>{versions}</span>}
-        {(failed || scan.failed > 0) && <span>失败账号保留上次成功的目录。</span>}
+        {(failed || scan.failed > 0) && (
+          <span>{translate("models.actions.failedKeepLastNote")}</span>
+        )}
       </>
     ),
   });
@@ -833,12 +879,10 @@ export function Models() {
         notify({
           key: "guard",
           tone: "good",
-          title: `${key === "model_guard" ? "表外模型拦截" : "模型能力预检"}已${next ? "开启" : "关闭"}`,
+          title: `${key === "model_guard" ? translate("models.guard.modelGuard") : translate("models.guard.capabilityGuard")}${currentLanguage() === "en" ? ": " : ""}${next ? translate("models.guard.enabled") : translate("models.guard.disabled")}`,
           body:
             key === "model_capability_guard" && !next ? (
-              <span>
-                仅关闭新增能力预检；元数据展示、国际图片归并及其他安全限制不变，新请求生效。
-              </span>
+              <span>{translate("models.guard.capabilityHelp")}</span>
             ) : undefined,
         });
         resource.reload();
@@ -856,8 +900,8 @@ export function Models() {
   return (
     <>
       <PageTitle
-        title="模型路由"
-        description="独立映射模型名称，并明确每条路由的账号或区域边界。"
+        title={translate("models.page.title")}
+        description={translate("models.page.desc")}
         actions={
           <>
             <button
@@ -868,27 +912,33 @@ export function Models() {
               }}
             >
               <RefreshIcon spinning={resource.refreshing || credentials.refreshing} />
-              刷新目录
+              {translate("models.actions.refresh")}
             </button>
             <button
               disabled={rateJob.job?.status === "running"}
               onClick={() => rateJob.start()}
-              title="后台任务：对目录声明 0x 的模型逐产品发起一次 ≈8K token 对话；有扣费即为实测计费，未扣费才是真 0 倍率"
+              title={translate("models.actions.probeRatesHover")}
             >
               <RefreshIcon spinning={rateJob.job?.status === "running"} />
               {rateJob.job?.status === "running"
-                ? `检测中 ${rateJob.job.completed}/${rateJob.job.total}`
-                : "一键检测倍率"}
+                ? translate("models.actions.probing", {
+                    completed: rateJob.job.completed,
+                    total: rateJob.job.total,
+                  })
+                : translate("models.actions.probeRates")}
             </button>
             <button
               disabled={scanBusy || scan?.status === "running"}
               onClick={startScan}
-              title="逐个账号刷新目录，仅由你手动触发；单账号失败时保留其旧目录"
+              title={translate("models.actions.scanAllHover")}
             >
               <RefreshIcon spinning={scanBusy || scan?.status === "running"} />
               {scan?.status === "running"
-                ? `扫描中 ${scan.completed}/${scan.total}`
-                : "扫描全部账号模型"}
+                ? translate("models.actions.scanning", {
+                    completed: scan.completed,
+                    total: scan.total,
+                  })
+                : translate("models.actions.scanAll")}
             </button>
             <button
               className={s.primary}
@@ -899,7 +949,7 @@ export function Models() {
               }}
             >
               <Icon name="plus" />
-              新增模型
+              {translate("models.actions.addModel")}
             </button>
           </>
         }
@@ -912,57 +962,64 @@ export function Models() {
       )}
       <ErrorNotice message={credentials.error} retry={credentials.reload} />
       {scan?.status === "running" && (
-        <ProgressBanner title="扫描全部账号模型" completed={scan.completed} total={scan.total}>
+        <ProgressBanner
+          title={translate("models.banner.scanAll")}
+          completed={scan.completed}
+          total={scan.total}
+        >
           <small>{scanSummary(scan)}</small>
         </ProgressBanner>
       )}
       <Panel
-        title="模型目录"
+        title={translate("models.title")}
         hint={
           resource.data
             ? filtering && rows
-              ? `命中 ${rows.length} / ${resource.data.models.length} 个模型`
-              : `${resource.data.models.length} 个模型`
+              ? translate("models.searchMatched", {
+                  count: rows.length,
+                  total: resource.data.models.length,
+                })
+              : translate("models.totalModels", { total: resource.data.models.length })
             : undefined
         }
       >
         <div className={s.toolbar}>
           <SearchInput
-            aria-label="搜索模型"
-            placeholder="搜索 ID、名称、描述、厂商，支持空格分隔多关键词…"
+            aria-label={translate("models.search.label")}
+            placeholder={translate("models.search.placeholder")}
             value={query}
             onChange={setQuery}
           />
           <div className={s.filterBar}>
             <Select
-              aria-label="筛选区域"
+              aria-label={translate("models.filter.region")}
               value={filter.region}
               onChange={(value) => setFilter({ ...filter, region: value })}
             >
-              <option value="">全部区域</option>
-              <option value="auto">自动选择</option>
-              <option value="cn">中国大陆</option>
-              <option value="intl">国际</option>
+              <option value="">{translate("models.filter.allRegions")}</option>
+              <option value="auto">{translate("models.filter.auto")}</option>
+              <option value="cn">{translate("models.filter.cn")}</option>
+              <option value="intl">{translate("models.filter.intl")}</option>
             </Select>
             <Select
-              aria-label="筛选能力"
+              aria-label={translate("models.filter.capabilities")}
               value={filter.capability}
               onChange={(value) => setFilter({ ...filter, capability: value })}
             >
-              <option value="">全部能力</option>
-              <option value="media_image">图片生成 / 编辑</option>
-              <option value="media_video">视频生成</option>
-              <option value="images">支持视觉</option>
-              <option value="tools">支持工具</option>
-              <option value="reasoning">支持思考</option>
+              <option value="">{translate("models.filter.allCapabilities")}</option>
+              <option value="media_image">{translate("models.filter.mediaImage")}</option>
+              <option value="media_video">{translate("models.filter.mediaVideo")}</option>
+              <option value="images">{translate("models.filter.images")}</option>
+              <option value="tools">{translate("models.filter.tools")}</option>
+              <option value="reasoning">{translate("models.filter.reasoning")}</option>
             </Select>
             <Select
-              aria-label="筛选思考"
+              aria-label={translate("models.filter.efforts")}
               value={filter.effort}
               onChange={(value) => setFilter({ ...filter, effort: value })}
             >
-              <option value="">全部档位</option>
-              <option value="off">可关闭思考</option>
+              <option value="">{translate("models.filter.allEfforts")}</option>
+              <option value="off">{translate("models.filter.canDisable")}</option>
               {EFFORT_FILTERS.map((value) => (
                 <option key={value} value={value}>
                   {value}
@@ -970,24 +1027,24 @@ export function Models() {
               ))}
             </Select>
             <Select
-              aria-label="筛选价格"
+              aria-label={translate("models.filter.price")}
               value={filter.price}
               onChange={(value) => setFilter({ ...filter, price: value })}
             >
-              <option value="">全部价格</option>
-              <option value="free">限时免费</option>
-              <option value="paid">收费</option>
+              <option value="">{translate("models.filter.allPrices")}</option>
+              <option value="free">{translate("models.filter.free")}</option>
+              <option value="paid">{translate("models.filter.paid")}</option>
             </Select>
             <Select
-              aria-label="排序方式"
+              aria-label={translate("models.filter.sort")}
               value={sort}
               onChange={(value) => setSort(value as SortKey)}
             >
-              <option value="catalog">目录顺序</option>
-              <option value="rate">倍率 低 → 高</option>
-              <option value="context">上下文 大 → 小</option>
-              <option value="output">最大输出 大 → 小</option>
-              <option value="name">模型 ID A → Z</option>
+              <option value="catalog">{translate("models.sort.catalog")}</option>
+              <option value="rate">{translate("models.sort.rate")}</option>
+              <option value="context">{translate("models.sort.context")}</option>
+              <option value="output">{translate("models.sort.output")}</option>
+              <option value="name">{translate("models.sort.name")}</option>
             </Select>
             {filtering && (
               <button
@@ -997,25 +1054,32 @@ export function Models() {
                   setSort("catalog");
                 }}
               >
-                重置
+                {translate("models.filter.reset")}
               </button>
             )}
             <label className={s.enableSwitch}>
               <input
                 type="checkbox"
                 role="switch"
-                aria-label="表外模型拦截"
+                aria-label={translate("models.guard.label")}
                 checked={resource.data?.model_guard !== false}
                 disabled={busy || !resource.data || resource.data.model_guard_locked === true}
                 onChange={(e) => toggleGuard("model_guard", e.target.checked)}
               />
-              <span>表外拦截：{resource.data?.model_guard === false ? "关闭" : "开启"}</span>
+              <span>
+                {translate("models.guard.status", {
+                  state:
+                    resource.data?.model_guard === false
+                      ? translate("credentials.notify.turnedOff")
+                      : translate("credentials.notify.turnedOn"),
+                })}
+              </span>
             </label>
             <label className={s.enableSwitch}>
               <input
                 type="checkbox"
                 role="switch"
-                aria-label="模型能力预检"
+                aria-label={translate("models.preflight.label")}
                 checked={resource.data?.model_capability_guard !== false}
                 disabled={
                   busy ||
@@ -1026,12 +1090,13 @@ export function Models() {
                 onChange={(e) => toggleGuard("model_capability_guard", e.target.checked)}
               />
               <span>
-                能力预检：
+                {translate("models.guard.capabilityCheck")}
+                {currentLanguage() === "en" ? ": " : "："}
                 {resource.data?.model_capability_guard === undefined
-                  ? "未知"
+                  ? translate("values.unknown")
                   : resource.data.model_capability_guard
-                    ? "开启"
-                    : "关闭"}
+                    ? translate("common.enabled")
+                    : translate("common.disabled")}
               </span>
             </label>
           </div>
@@ -1042,14 +1107,14 @@ export function Models() {
               <table>
                 <thead>
                   <tr>
-                    <th>模型 ID</th>
-                    <th>消费倍率 / 优惠</th>
-                    <th>模型能力</th>
-                    <th>上下文窗口</th>
-                    <th>最大输出</th>
-                    <th>思考档位</th>
-                    <th>路由边界</th>
-                    <th>操作</th>
+                    <th>{translate("models.table.thId")}</th>
+                    <th>{translate("models.table.thRate")}</th>
+                    <th>{translate("models.table.thCaps")}</th>
+                    <th>{translate("models.table.thContext")}</th>
+                    <th>{translate("models.table.thOutput")}</th>
+                    <th>{translate("models.table.thEffort")}</th>
+                    <th>{translate("models.table.thBoundary")}</th>
+                    <th>{translate("models.table.thActions")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1059,29 +1124,40 @@ export function Models() {
                         <div className={s.modelCell}>
                           <div className={s.modelIdLine}>
                             <strong className={s.modelName}>{m.public_id}</strong>
-                            {!m.enabled && <Badge tone="neutral">已停用</Badge>}
-                            {m.custom && <Badge>自建</Badge>}
+                            {!m.enabled && (
+                              <Badge tone="neutral">{translate("models.badge.disabled")}</Badge>
+                            )}
+                            {m.custom && <Badge>{translate("models.badge.custom")}</Badge>}
                             {m.media_kinds?.map((kind) => (
                               <Badge key={kind} tone="neutral">
-                                {mediaKindLabels[kind] ?? kind}
+                                {mediaKindLabel(kind)}
                               </Badge>
                             ))}
-                            {m.embedding && <Badge tone="neutral">向量</Badge>}
-                            {m.rerank && <Badge tone="neutral">重排序</Badge>}
+                            {m.embedding && (
+                              <Badge tone="neutral">{translate("models.badge.embedding")}</Badge>
+                            )}
+                            {m.rerank && (
+                              <Badge tone="neutral">{translate("models.badge.rerank")}</Badge>
+                            )}
                             {m.available === false && m.enabled && (
-                              <Badge tone="warn">暂无候选</Badge>
+                              <Badge tone="warn">{translate("models.badge.noCandidates")}</Badge>
                             )}
                           </div>
                           <small className={s.mono}>{m.upstream_id ?? m.id}</small>
                           {modelDisplayName(m) && <small>{modelDisplayName(m)}</small>}
                           {m.routes && m.routes.length > 1 && (
-                            <div className={s.routeSummary} aria-label="模型路由">
-                              <span className={s.routeSummaryLabel}>路由</span>
+                            <div
+                              className={s.routeSummary}
+                              aria-label={translate("models.routeSummary")}
+                            >
+                              <span className={s.routeSummaryLabel}>
+                                {translate("models.route")}
+                              </span>
                               {m.routes.map((route) => (
                                 <span
                                   className={`${s.routePill} ${route.enabled ? "" : s.routeDisabled}`}
                                   key={`${route.source}-${route.upstream_id}`}
-                                  title={`${route.source} · ${route.enabled ? "启用" : "已关闭"}`}
+                                  title={`${route.source} · ${route.enabled ? translate("common.enabled") : translate("common.disabled")}`}
                                 >
                                   {route.upstream_id}
                                   {route.weight !== null ? ` · ${route.weight}` : ""}
@@ -1089,7 +1165,9 @@ export function Models() {
                               ))}
                             </div>
                           )}
-                          {m.keep_original && <small>同时保留 {m.id}</small>}
+                          {m.keep_original && (
+                            <small>{translate("models.keepOriginalId", { id: m.id })}</small>
+                          )}
                         </div>
                       </td>
                       <td>
@@ -1112,29 +1190,35 @@ export function Models() {
                       </td>
                       <td>
                         {m.credential_ids.length
-                          ? `${m.credential_ids.length} 个指定账号`
+                          ? translate("models.binding.accountsCount", {
+                              count: m.credential_ids.length,
+                            })
                           : m.region
                             ? profileLabel(m.region)
-                            : "自动选择"}
+                            : translate("models.binding.auto")}
                         <small>
                           {m.profile
                             ? profileLabel(m.profile)
                             : m.credential_ids.length
-                              ? "严格绑定，不越界回退"
-                              : "按账号能力选择"}
+                              ? translate("models.binding.strictNoFallback")
+                              : translate("models.binding.byCapability")}
                         </small>
-                        {bindingMode(m) === "legacy" && <Badge tone="warn">旧联合范围</Badge>}
+                        {bindingMode(m) === "legacy" && (
+                          <Badge tone="warn">{translate("models.binding.legacyBadge")}</Badge>
+                        )}
                       </td>
                       <td>
                         <div className={s.rowActions}>
-                          <button onClick={() => setDetailsId(m.id)}>模型详情</button>
+                          <button onClick={() => setDetailsId(m.id)}>
+                            {translate("models.card.details")}
+                          </button>
                           <button
                             onClick={() => {
                               setEditorRevision(resource.data?.revision ?? null);
                               setEditing(m);
                             }}
                           >
-                            编辑规则
+                            {translate("models.card.editRule")}
                           </button>
                           {m.custom && (
                             <button
@@ -1144,7 +1228,7 @@ export function Models() {
                                 setError(null);
                               }}
                             >
-                              删除
+                              {translate("common.delete")}
                             </button>
                           )}
                         </div>
@@ -1155,14 +1239,17 @@ export function Models() {
               </table>
             </div>
           ) : (
-            <Empty title={query ? "没有匹配的模型" : "模型目录为空"}>
-              可新增模型映射，或添加凭证以同步目录。
+            <Empty title={query ? translate("models.emptyFiltered") : translate("models.empty")}>
+              {translate("models.emptyHint")}
             </Empty>
           ))}
       </Panel>
       <DrawerPresence>
         {detailed && (
-          <Drawer title={`模型详情 · ${detailed.public_id}`} onClose={() => setDetailsId(null)}>
+          <Drawer
+            title={translate("models.detail.title", { id: detailed.public_id })}
+            onClose={() => setDetailsId(null)}
+          >
             <ModelMetadata model={detailed} />
           </Drawer>
         )}
@@ -1187,9 +1274,13 @@ export function Models() {
       </DrawerPresence>
       <DrawerPresence>
         {deleting && resource.data && (
-          <Drawer title="删除自建模型" onClose={() => setDeleting(null)} dismissDisabled={busy}>
+          <Drawer
+            title={translate("models.delete.title")}
+            onClose={() => setDeleting(null)}
+            dismissDisabled={busy}
+          >
             <p className={s.warning}>
-              删除 {deleting.public_id} 的本地路由。不会删除上游模型、账号或历史统计。
+              {translate("models.delete.desc", { id: deleting.public_id })}
             </p>
             <ErrorNotice message={error} />
             <button
@@ -1204,7 +1295,7 @@ export function Models() {
                   })
                   .then((response) => {
                     if (object(response.data).ok !== true)
-                      throw new Error("后端未确认删除，请刷新后核验");
+                      throw new Error(translate("models.error.deleteNotConfirmed"));
                     setDeleting(null);
                     resource.reload();
                   })
@@ -1212,7 +1303,7 @@ export function Models() {
                   .finally(() => setBusy(false));
               }}
             >
-              {busy ? "正在删除…" : "确认删除模型"}
+              {busy ? translate("models.delete.deleting") : translate("models.delete.confirm")}
             </button>
           </Drawer>
         )}

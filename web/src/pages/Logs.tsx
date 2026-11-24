@@ -102,7 +102,7 @@ export function Logs() {
       .get("/keys")
       .then((response) => {
         if (!active) return;
-        const rows = list(object(response.data).items, "密钥列表");
+        const rows = list(object(response.data).items, "keys list");
         setKeyNames(
           Object.fromEntries(
             rows
@@ -468,7 +468,7 @@ export function Logs() {
             <Empty title={t("logs.noMatch")}>{t("logs.adjustFilters")}</Empty>
           ))}
         <div className={s.pagination}>
-          <span>第 {cursors.length + 1} 页</span>
+          <span>{t("pagination.pageN", { page: cursors.length + 1 })}</span>
           <div className={s.actions}>
             <button
               disabled={!cursors.length || resource.loading}

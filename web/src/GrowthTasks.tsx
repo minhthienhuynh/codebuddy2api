@@ -1,3 +1,4 @@
+import { t as translate, localizeMessage, currentLanguage } from "./i18n";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, errorMessage, list, object, text, type Credential, type RecordValue } from "./api";
 import { jobResponse, useJobPolling, type Job } from "./jobs";
@@ -28,10 +29,11 @@ type GrowthView = {
   stale?: boolean;
 };
 
-const GROUP_LABELS: Record<string, string> = {
-  behavior: "行为上报",
-  chat: "真实对话",
-  miniprogram: "小程序",
+const groupLabel = (group: string) => {
+  if (group === "behavior") return translate("tasks.growth.behavior");
+  if (group === "chat") return translate("tasks.growth.chat");
+  if (group === "miniprogram") return translate("tasks.growth.miniprogram");
+  return translate("tasks.growth.otherGroup");
 };
 
 /** Every account's growth job; runs are server-side, so they survive closing the drawer. */
@@ -57,18 +59,35 @@ export function useGrowthJobs() {
 
 /** Banner text for the task a growth job is running now. */
 export function describeGrowth(item: RecordValue): string {
-  return `执行 ${text(item.title ?? item.task_code)}`;
+  const rawTitle = text(item.title ?? item.task_code);
+  const title = localizeMessage(rawTitle) || rawTitle;
+  return translate("tasks.growth.execute", { title });
 }
 
 function summary(job: Job): string {
   const results = job.results;
-  if (!results.length) return "没有可执行的任务（均已领取或未解锁）";
-  if (job.meta.kind === "single") return text(results[0].message) || "已执行";
+  if (!results.length) return translate("tasks.growth.noExecutable");
+  if (job.meta.kind === "single")
+    return localizeMessage(text(results[0].message)) || translate("tasks.growth.executed");
   const failed = results.filter((row) => row.ok !== true);
+  const lParen = currentLanguage() === "en" ? " (" : "（";
+  const rParen = currentLanguage() === "en" ? ")" : "）";
+  const sep = currentLanguage() === "en" ? ", " : "，";
   return (
-    `已执行 ${results.length} 个任务，其中 ${results.filter((row) => row.claimed === true).length} 个领奖` +
+    translate("tasks.growth.summary", {
+      count: results.length,
+      claimed: results.filter((row) => row.claimed === true).length,
+    }) +
     (failed.length
-      ? `；未完成：${failed.map((row) => `${text(row.title ?? row.task_code)}（${text(row.message)}）`).join("，")}`
+      ? translate("tasks.growth.uncompleted", {
+          items: failed
+            .map((row) => {
+              const taskTitle = localizeMessage(text(row.title ?? row.task_code));
+              const taskMsg = localizeMessage(text(row.message));
+              return `${taskTitle}${lParen}${taskMsg}${rParen}`;
+            })
+            .join(sep),
+        })
       : "")
   );
 }
@@ -107,7 +126,7 @@ export function GrowthTasks({
         `/credentials/${encodeURIComponent(credential.id)}/growth-tasks`,
         { signal: abort.signal },
       );
-      setView(object(response.data, "成长任务") as unknown as GrowthView);
+      setView(object(response.data, "growth tasks") as unknown as GrowthView);
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -130,7 +149,9 @@ export function GrowthTasks({
     if (job.finished_at === seenFinish.current) return;
     const opened = seenFinish.current === undefined;
     seenFinish.current = job.finished_at;
-    setNotice(opened ? `上次执行：${summary(job)}` : summary(job));
+    setNotice(
+      opened ? translate("tasks.growth.lastExecution", { summary: summary(job) }) : summary(job),
+    );
     if (!opened) void load();
   }, [job, load]);
 
@@ -180,16 +201,18 @@ export function GrowthTasks({
         }
       }
       setNotice(
-        `已把本账号的任务开关同步到 ${selectedIds.filter((id) => id !== credential.id).length} 个已选账号`,
+        translate("tasks.growth.syncedToSelected", {
+          count: selectedIds.filter((id) => id !== credential.id).length,
+        }),
       );
     } catch (e) {
       setError(errorMessage(e));
     }
   };
 
-  if (view?.stale === true) return <small>凭证已变化，请刷新后重新打开成长任务</small>;
+  if (view?.stale === true) return <small>{translate("tasks.growth.credentialStale")}</small>;
   if (view && view.supported === false) return null; // 非 CN 个人账号：整个子栏隐藏
-  if (!view) return <small>{error ? text(error) : "成长任务加载中…"}</small>;
+  if (!view) return <small>{error ? text(error) : translate("tasks.growth.loading")}</small>;
 
   // 无自动链的任务不展示：达标奖励仍由「自动成长补领」领取。
   const automatable = view.tasks.filter((task) => task.automatable === true);
@@ -209,88 +232,117 @@ export function GrowthTasks({
           <input
             type="checkbox"
             role="switch"
-            aria-label={`自动成长补领 ${credential.name ?? credential.id}`}
+            aria-label={translate("tasks.growth.autoBackfillAria", {
+              name: credential.name ?? credential.id,
+            })}
             checked={credential.auto_growth === true}
             disabled={busy || typeof credential.auto_growth !== "boolean"}
             onChange={(e) => onPreference(credential, "auto_growth", e.target.checked)}
           />
-          自动成长补领
+          {translate("tasks.growth.autoBackfill")}
         </label>
-        <small>仅补齐「已达标未领」的奖励，不发起对话或行为上报</small>
+        <small>{translate("tasks.growth.backfillDesc")}</small>
       </div>
       {Object.entries(groups).map(([group, tasks]) => (
         <div key={group}>
           <small>
-            <strong>{GROUP_LABELS[group] ?? "其他"}</strong>
-            {group === "chat" ? "（开启即授权消耗该账号对话额度）" : ""}
+            <strong>{groupLabel(group)}</strong>
+            {group === "chat" ? translate("tasks.growth.chatAuthWarning") : ""}
           </small>
-          {tasks.map((task) => (
-            <div key={task.task_code} className={s.growthTaskRow}>
-              <label className={s.check}>
-                <input
-                  type="checkbox"
-                  role="switch"
-                  aria-label={`自动${task.title} ${credential.name ?? credential.id}`}
-                  checked={view.growth_auto[task.task_code] === true}
-                  disabled={busy || saving || task.claimed}
-                  onChange={(e) => saveSwitches({ [task.task_code]: e.target.checked })}
-                />
-                {task.title}
-              </label>
-              <span className={s.badge}>
-                {`${task.current}/${task.target || "—"}${
-                  task.credit || task.energy ? ` · +${task.credit}c +${task.energy}e` : ""
-                }`}
-              </span>
-              {/* 提示挂在外层：禁用按钮在部分浏览器不触发悬停提示。 */}
-              <span
-                className={s.growthAction}
-                title={!task.claimed && task.locked ? "按官方节奏逐日开放" : undefined}
-              >
-                <button
-                  disabled={busy || running || task.claimed || task.locked}
-                  aria-label={`一键完成${task.title} ${credential.name ?? credential.id}`}
-                  onClick={() => run(task.task_code)}
+          {tasks.map((task) => {
+            const localizedTitle = localizeMessage(task.title);
+            return (
+              <div key={task.task_code} className={s.growthTaskRow}>
+                <label className={s.check}>
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    aria-label={translate("tasks.growth.autoTaskAria", {
+                      title: localizedTitle,
+                      name: credential.name ?? credential.id,
+                    })}
+                    checked={view.growth_auto[task.task_code] === true}
+                    disabled={busy || saving || task.claimed}
+                    onChange={(e) => saveSwitches({ [task.task_code]: e.target.checked })}
+                  />
+                  {localizedTitle}
+                </label>
+                <span className={s.badge}>
+                  {`${task.current}/${task.target || "—"}${
+                    task.credit || task.energy ? ` · +${task.credit}c +${task.energy}e` : ""
+                  }`}
+                </span>
+                {/* 提示挂在外层：禁用按钮在部分浏览器不触发悬停提示。 */}
+                <span
+                  className={s.growthAction}
+                  title={
+                    !task.claimed && task.locked
+                      ? translate("tasks.growth.lockedDailyTip")
+                      : undefined
+                  }
                 >
-                  {task.claimed
-                    ? "已领取"
-                    : task.locked
-                      ? "未解锁"
-                      : currentCode === task.task_code
-                        ? "执行中…"
-                        : "一键完成"}
-                </button>
-              </span>
-            </div>
-          ))}
+                  <button
+                    disabled={busy || running || task.claimed || task.locked}
+                    aria-label={translate("tasks.growth.oneClickAria", {
+                      title: localizedTitle,
+                      name: credential.name ?? credential.id,
+                    })}
+                    onClick={() => run(task.task_code)}
+                  >
+                    {task.claimed
+                      ? translate("tasks.growth.claimed")
+                      : task.locked
+                        ? translate("tasks.growth.locked")
+                        : currentCode === task.task_code
+                          ? translate("tasks.growth.executing")
+                          : translate("tasks.growth.oneClickComplete")}
+                  </button>
+                </span>
+              </div>
+            );
+          })}
         </div>
       ))}
       <div className={s.credTaskRow}>
         <button
           disabled={busy || saving || selectable.length === 0}
-          aria-label={`${allOn ? "全不选" : "全选"}任务开关 ${credential.name ?? credential.id}`}
+          aria-label={translate("tasks.growth.toggleAria", {
+            action: allOn
+              ? translate("tasks.growth.unselectAll")
+              : translate("tasks.growth.selectAll"),
+            name: credential.name ?? credential.id,
+          })}
           onClick={() =>
             saveSwitches(Object.fromEntries(selectable.map((task) => [task.task_code, !allOn])))
           }
         >
-          {allOn ? "全不选" : "全选"}
+          {allOn ? translate("tasks.growth.unselectAll") : translate("tasks.growth.selectAll")}
         </button>
         <button
           disabled={busy || saving || running}
-          aria-label={`全部执行 ${credential.name ?? credential.id}`}
+          aria-label={translate("tasks.growth.executeAllAria", {
+            name: credential.name ?? credential.id,
+          })}
           onClick={() => run()}
         >
           {running
-            ? `执行中 ${job.completed}/${job.total}`
-            : "全部执行（未勾选时执行全部未完成任务）"}
+            ? translate("tasks.growth.executingProgress", {
+                completed: job.completed,
+                total: job.total,
+              })
+            : translate("tasks.growth.executeAllDesc")}
         </button>
         {selectedIds.some((id) => id !== credential.id) && (
           <button
             disabled={busy}
-            aria-label={`同步开关到已选账号 ${credential.name ?? credential.id}`}
+            aria-label={translate("tasks.growth.syncAria", {
+              name: credential.name ?? credential.id,
+            })}
             onClick={syncToSelected}
           >
-            同步开关到已选账号 ({selectedIds.filter((id) => id !== credential.id).length})
+            {translate("tasks.growth.syncToSelected", {
+              count: selectedIds.filter((id) => id !== credential.id).length,
+            })}
           </button>
         )}
       </div>

@@ -3,7 +3,8 @@ import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router";
 import { AppRoutes, Guard } from "./App";
 import { api, useSession, type ModelRule } from "./api";
-import { CLEAR_CONFIRMATION, ClearLogs } from "./components";
+import { CLEAR_CONFIRMATION, CLEAR_CONFIRMATION_EN, ClearLogs } from "./components";
+import { chooseLanguage, LanguageProvider } from "./i18n";
 import { ModelEditor, validateRule } from "./pages/Models";
 import { choose } from "./test-utils";
 const rule: ModelRule = {
@@ -123,6 +124,37 @@ describe("destructive warnings", () => {
       "autocomplete",
       "current-password",
     );
+  });
+  it("allows clear all in English mode with CLEAR_CONFIRMATION_EN", async () => {
+    chooseLanguage("en");
+    try {
+      const post = vi.spyOn(api, "post").mockResolvedValue({ data: { ok: true } });
+      render(
+        <LanguageProvider>
+          <ClearLogs onClose={vi.fn()} onDone={vi.fn()} />
+        </LanguageProvider>,
+      );
+      choose(screen.getByLabelText("Scope"), "all");
+      const submit = screen.getByRole("button", { name: "Confirm irreversible cleanup" });
+      expect(submit).toHaveProperty("disabled", true);
+      fireEvent.change(screen.getByLabelText(`Type "${CLEAR_CONFIRMATION_EN}"`), {
+        target: { value: CLEAR_CONFIRMATION_EN },
+      });
+      fireEvent.change(screen.getByLabelText("Current admin password"), {
+        target: { value: "test-only-password" },
+      });
+      expect(submit).toHaveProperty("disabled", false);
+      fireEvent.click(submit);
+      await waitFor(() =>
+        expect(post).toHaveBeenCalledWith("/logs/clear", {
+          scope: "all",
+          confirmation: CLEAR_CONFIRMATION_EN,
+          password: "test-only-password",
+        }),
+      );
+    } finally {
+      chooseLanguage("zh");
+    }
   });
   it("ordinary clear preserves statistics and sends no key", async () => {
     const post = vi.spyOn(api, "post").mockResolvedValue({ data: { ok: true } });

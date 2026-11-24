@@ -3,6 +3,7 @@ import type { ModelRule, RecordValue } from "./api";
 import { Badge, DataValue, Empty, Panel, profileLabel } from "./components";
 import s from "./ui.module.scss";
 import { Select } from "./fields";
+import { t as translate, currentLanguage } from "./i18n";
 
 type Facts = Pick<ModelRule, "capabilities" | "limits" | "metadata_by_profile">;
 const record = (value: unknown): RecordValue =>
@@ -15,11 +16,10 @@ const names: Record<string, string> = {
   reasoning: "思考",
   thinking_disable: "关闭思考",
 };
+const VALID_STATES = new Set(["supported", "unsupported", "mixed", "unknown"]);
 const states: Record<string, string> = {
   supported: "支持",
   unsupported: "不支持",
-  mixed: "因路由而异",
-  unknown: "未知",
 };
 const labels: Record<string, string> = {
   id: "上游标识",
@@ -58,9 +58,11 @@ const labels: Record<string, string> = {
   top_k: "Top K 建议",
   repetition_penalty: "重复惩罚建议",
 };
-const groups: [string, string[]][] = [
+const groups: [string, string, string, string[]][] = [
   [
+    "modelMeta.section.basic",
     "基本信息",
+    "Basic Information",
     [
       "id",
       "name",
@@ -76,7 +78,9 @@ const groups: [string, string[]][] = [
     ],
   ],
   [
+    "modelMeta.section.limits",
     "能力与限制",
+    "Capabilities & Limits",
     [
       "supportsImages",
       "disabledMultimodal",
@@ -92,7 +96,9 @@ const groups: [string, string[]][] = [
     ],
   ],
   [
+    "modelMeta.section.reasoning",
     "思考与参数建议",
+    "Reasoning & Parameter Suggestions",
     [
       "reasoning",
       "relatedModels",
@@ -111,19 +117,21 @@ export function CapabilityBadges({ model, full = false }: { model: Facts; full?:
     <div className={s.badgeStack}>
       {(full ? Object.keys(names) : ["images", "tools", "reasoning"]).map((key) => {
         const raw = declared[key];
-        const state = typeof raw === "string" && Object.hasOwn(states, raw) ? raw : "unknown";
+        const state = typeof raw === "string" && VALID_STATES.has(raw) ? raw : "unknown";
         return (
           <Badge
             key={key}
             tone={state === "supported" ? "good" : state === "mixed" ? "warn" : "neutral"}
           >
-            {names[key]}：{states[state]}
+            {currentLanguage() === "en"
+              ? `${tagName(key)}: ${stateName(state)}`
+              : `${tagName(key)}：${stateName(state)}`}
           </Badge>
         );
       })}
       {variants(model.metadata_by_profile).some(([, rows]) =>
         rows.some((entry) => record(entry.catalog_source).kind === "shared"),
-      ) && <Badge tone="neutral">国际共享目录</Badge>}
+      ) && <Badge tone="neutral">{translate("modelMeta.label.sharedCatalogBadge")}</Badge>}
     </div>
   );
 }
@@ -134,6 +142,52 @@ const chipTones: Record<string, string> = {
   unsupported: s.capUnsupported,
   unknown: s.capUnknown,
 };
+
+function tagName(key: string): string {
+  const k = "modelMeta.tags." + (key === "thinking_disable" ? "thinkingDisable" : key);
+  const t = translate(k);
+  if (t !== k) return t;
+  if (currentLanguage() === "en") {
+    if (key === "images") return "Images";
+    if (key === "tools") return "Tools";
+    if (key === "reasoning") return "Reasoning";
+    if (key === "thinking_disable") return "Disable Thinking";
+  }
+  return names[key] ?? key;
+}
+function stateName(key: string): string {
+  const k = "modelMeta.status." + key;
+  const t = translate(k);
+  if (t !== k) return t;
+  if (currentLanguage() === "en") {
+    if (key === "supported") return "Supported";
+    if (key === "unsupported") return "Unsupported";
+    if (key === "mixed") return "Mixed";
+    if (key === "unknown") return "Unknown";
+  }
+  if (key === "mixed") return "因路由而异";
+  if (key === "unknown") return "未知";
+  return states[key] ?? key;
+}
+function fieldLabel(key: string): string {
+  const k = "modelMeta.fields." + key;
+  const t = translate(k);
+  if (t !== k) return t;
+  if (currentLanguage() === "en") return key.replace(/([A-Z])/g, " $1").trim();
+  return labels[key] ?? key;
+}
+function chipLabel(key: string): string {
+  if (key === "images") return translate("modelMeta.label.vision");
+  if (key === "tools") return translate("modelMeta.label.tools");
+  if (key === "reasoning") return translate("modelMeta.label.inference");
+  if (currentLanguage() === "en") {
+    if (key === "images") return "Vision";
+    if (key === "tools") return "Tools";
+    if (key === "reasoning") return "Reasoning";
+  }
+  return chipNames[key] ?? key;
+}
+
 const chipNames: Record<string, string> = {
   images: "视觉",
   tools: "工具",
@@ -220,15 +274,24 @@ export function CapabilityChips({ model }: { model: Facts }) {
       <div className={s.chipRow}>
         {(["images", "tools", "reasoning"] as const).map((key) => {
           const raw = declared[key];
-          const state = typeof raw === "string" && Object.hasOwn(states, raw) ? raw : "unknown";
-          if (state === "mixed") notes.push(`${names[key]}${states[state]}`);
+          const state = typeof raw === "string" && VALID_STATES.has(raw) ? raw : "unknown";
+          if (state === "mixed")
+            notes.push(
+              currentLanguage() === "en"
+                ? `${tagName(key)}: ${stateName(state)}`
+                : `${tagName(key)}${stateName(state)}`,
+            );
           return (
             <span
               className={`${s.capChip} ${chipTones[state]}`}
               key={key}
-              title={`${names[key]}：${states[state]}`}
+              title={
+                currentLanguage() === "en"
+                  ? `${tagName(key)}: ${stateName(state)}`
+                  : `${tagName(key)}：${stateName(state)}`
+              }
             >
-              {chipNames[key]}
+              {chipLabel(key)}
             </span>
           );
         })}
@@ -240,19 +303,23 @@ export function CapabilityChips({ model }: { model: Facts }) {
       ))}
       {variants(model.metadata_by_profile).some(([, rows]) =>
         rows.some((entry) => record(entry.catalog_source).kind === "shared"),
-      ) && <small className={s.specNote}>国际共享目录</small>}
+      ) && <small className={s.specNote}>{translate("modelMeta.label.sharedCatalogBadge")}</small>}
     </div>
   );
 }
 export function EffortChips({ model }: { model: Facts }) {
   const { options, defaults, closable, only } = effortSummary(model);
   const state = record(model.capabilities).reasoning;
-  if (state === "unsupported") return <span className={s.specMuted}>不支持思考</span>;
+  if (state === "unsupported")
+    return <span className={s.specMuted}>{translate("modelMeta.label.unsupportedThinking")}</span>;
   if (!options.length && !closable && !only) {
     if (state === "supported")
       return (
         <span className={s.specMuted}>
-          固定档{defaults.length === 1 ? ` · 默认 ${defaults[0]}` : ""}
+          {translate("modelMeta.label.fixedEffort")}
+          {defaults.length === 1
+            ? ` · ${translate("modelMeta.label.defaultPrefix")} ${defaults[0]}`
+            : ""}
         </span>
       );
     return <span className={s.specMuted}>—</span>;
@@ -263,13 +330,21 @@ export function EffortChips({ model }: { model: Facts }) {
         <span
           className={`${s.effortChip} ${defaults.includes(value) ? s.effortDefault : ""}`}
           key={value}
-          title={defaults.includes(value) ? "默认档" : undefined}
+          title={defaults.includes(value) ? translate("modelMeta.label.defaultEffort") : undefined}
         >
           {value}
         </span>
       ))}
-      {only && <span className={`${s.effortChip} ${s.effortNote}`}>仅思考</span>}
-      {closable && <span className={`${s.effortChip} ${s.effortNote}`}>可关闭</span>}
+      {only && (
+        <span className={`${s.effortChip} ${s.effortNote}`}>
+          {translate("modelMeta.label.onlyReasoning")}
+        </span>
+      )}
+      {closable && (
+        <span className={`${s.effortChip} ${s.effortNote}`}>
+          {translate("modelMeta.label.closableReasoning")}
+        </span>
+      )}
     </div>
   );
 }
@@ -302,7 +377,7 @@ function MetaFields({ data, depth = 0 }: { data: RecordValue; depth?: number }) 
     <dl className={s.metadataFields}>
       {Object.entries(data).map(([key, value]) => (
         <Fragment key={key}>
-          <dt title={key}>{Object.hasOwn(labels, key) ? labels[key] : key}</dt>
+          <dt title={key}>{fieldLabel(key)}</dt>
           <dd>
             {value !== null && typeof value === "object" && !Array.isArray(value) && depth < 3 ? (
               <MetaFields data={record(value)} depth={depth + 1} />
@@ -335,7 +410,8 @@ export function modelDisplayName(model: Facts): string {
 
 function CatalogSource({ entry }: { entry: RecordValue }) {
   const source = record(entry.catalog_source);
-  if (source.kind === "direct") return <p className={s.note}>目录来源：当前产品直接声明。</p>;
+  if (source.kind === "direct")
+    return <p className={s.note}>{translate("modelMeta.label.directSource")}</p>;
   if (source.kind !== "shared") return null;
   const profiles = Array.isArray(source.profiles)
     ? source.profiles.filter(
@@ -345,17 +421,18 @@ function CatalogSource({ entry }: { entry: RecordValue }) {
     : [];
   const originals = Array.isArray(entry.source_variants) ? entry.source_variants.map(record) : [];
   return (
-    <Panel title="共享目录来源">
+    <Panel title={translate("modelMeta.section.sharedCatalog")}>
       <p className={s.note}>
-        继承自{profiles.length ? profiles.map(profileLabel).join("、") : "未注明来源"}
-        ；当前账号未直接声明此模型，权限与实际扣费以上游为准。
+        {translate("modelMeta.label.sharedSourceDesc", {
+          source: profiles.length ? profiles.map(profileLabel).join(", ") : "—",
+        })}
       </p>
       <div className={s.modelMetadata}>
         {originals.map((original, index) => (
           <details className={s.rawData} key={index}>
             <summary>
               {profileLabel(typeof original.profile === "string" ? original.profile : "")} ·
-              来源版本 {index + 1}
+              {translate("modelMeta.label.sourceVersion", { index: index + 1 })}
             </summary>
             <MetaFields data={record(original.metadata)} />
           </details>
@@ -372,10 +449,8 @@ export function ModelMetadata({ model }: { model: Facts }) {
   const limits = record(model.limits);
   return (
     <>
-      <p className={s.note}>
-        以下为上游声明，不代表模型原生模态或实测保证；目录参数不会自动覆盖客户端请求。
-      </p>
-      <Panel title="能力概要">
+      <p className={s.note}>{translate("modelMeta.label.upstreamDisclaimer")}</p>
+      <Panel title={translate("modelMeta.section.summary")}>
         <div className={s.modelMetadata}>
           <CapabilityBadges model={model} full />
           <dl className={s.metadataFields}>
@@ -383,14 +458,14 @@ export function ModelMetadata({ model }: { model: Facts }) {
               const limit = record(limits[key]);
               return (
                 <Fragment key={key}>
-                  <dt>{labels[key]}</dt>
+                  <dt>{fieldLabel(key)}</dt>
                   <dd>
                     {limit.state === "mixed" ? (
-                      "因路由而异"
+                      stateName("mixed")
                     ) : limit.state === "known" ? (
                       <DataValue value={limit.value} />
                     ) : (
-                      "未知"
+                      stateName("unknown")
                     )}
                   </dd>
                 </Fragment>
@@ -400,11 +475,13 @@ export function ModelMetadata({ model }: { model: Facts }) {
         </div>
       </Panel>
       {!active ? (
-        <Empty title="尚无模型元数据">未知不等于不支持；请等待账号目录同步。</Empty>
+        <Empty title={translate("modelMeta.label.emptyMeta")}>
+          {translate("modelMeta.label.emptyMetaHint")}
+        </Empty>
       ) : (
         <>
           <label className={s.field}>
-            查看产品声明
+            {translate("modelMeta.label.viewProductDeclaration")}
             <Select value={active[0]} onChange={(value) => setSelected(value)}>
               {sources.map(([profile]) => (
                 <option key={profile} value={profile}>
@@ -414,23 +491,33 @@ export function ModelMetadata({ model }: { model: Facts }) {
             </Select>
           </label>
           {active[1].length > 1 && (
-            <p className={s.note}>同一产品的账号声明存在差异；以下保留各版本，不公开账号身份。</p>
+            <p className={s.note}>{translate("modelMeta.label.declarationDiffNote")}</p>
           )}
           {active[1].map((entry, index) => (
             <section
               key={`${active[0]}-${index}`}
-              aria-label={`${profileLabel(active[0])} 声明 ${index + 1}`}
+              aria-label={`${profileLabel(active[0])} ${translate("modelMeta.label.declarationTitle", { index: index + 1 })}`}
             >
-              {active[1].length > 1 && <h3>声明 {index + 1}</h3>}
-              {!Object.keys(entry).length && <Empty title="此来源未提供能力信息" />}
+              {active[1].length > 1 && (
+                <h3>{translate("modelMeta.label.declarationTitle", { index: index + 1 })}</h3>
+              )}
+              {!Object.keys(entry).length && (
+                <Empty title={translate("modelMeta.label.emptySourceCapabilities")} />
+              )}
               <CatalogSource entry={entry} />
-              {groups.map(([title, keys]) => {
+              {groups.map(([i18nKey, fallbackZh, fallbackEn, keys]) => {
                 const data = Object.fromEntries(
                   keys.filter((key) => Object.hasOwn(entry, key)).map((key) => [key, entry[key]]),
                 );
+                const title =
+                  translate(i18nKey) !== i18nKey
+                    ? translate(i18nKey)
+                    : currentLanguage() === "en"
+                      ? fallbackEn
+                      : fallbackZh;
                 return (
                   Object.keys(data).length > 0 && (
-                    <Panel title={title} key={title}>
+                    <Panel title={title} key={i18nKey}>
                       <div className={s.modelMetadata}>
                         <MetaFields data={data} />
                       </div>
@@ -439,7 +526,7 @@ export function ModelMetadata({ model }: { model: Facts }) {
                 );
               })}
               <details className={s.rawData}>
-                <summary>查看安全元数据 JSON</summary>
+                <summary>{translate("modelMeta.label.viewRawJson")}</summary>
                 <pre>{JSON.stringify(entry, null, 2)}</pre>
               </details>
             </section>

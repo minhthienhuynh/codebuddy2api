@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, useParams } from "react-router";
 import { api, errorMessage, list, number, object, text, useResource } from "../api";
-import { useT } from "../i18n";
+import { formatDate, localizeMessage, useT } from "../i18n";
 import {
   Badge,
   DrawerPresence,
@@ -68,9 +68,9 @@ function safeUrl(value: unknown): string | null {
 }
 
 function normalize(value: unknown): UpdateState {
-  const d = object(value, "更新状态");
-  const self = object(d.self_update ?? {}, "更新状态");
-  const job = object(d.job ?? {}, "更新任务");
+  const d = object(value, "update status");
+  const self = object(d.self_update ?? {}, "update status");
+  const job = object(d.job ?? {}, "update job");
   return {
     current: text(d.current),
     repository: safeUrl(d.repository) ?? "",
@@ -81,7 +81,7 @@ function normalize(value: unknown): UpdateState {
     error: optional(d.error),
     latest: optional(d.latest),
     updateAvailable: d.update_available === true,
-    releases: list(d.releases, "版本列表").map((item) => ({
+    releases: list(d.releases, "releases list").map((item) => ({
       tag: text(item.tag),
       version: text(item.version),
       name: text(item.name),
@@ -152,7 +152,7 @@ function newer(version: string, current: string): boolean {
 function date(value: string | number | null): string {
   if (value === null) return "—";
   const parsed = new Date(typeof value === "number" ? value * 1000 : value);
-  return Number.isNaN(parsed.valueOf()) ? "—" : parsed.toLocaleString("zh-CN");
+  return Number.isNaN(parsed.valueOf()) ? "—" : formatDate(parsed);
 }
 
 function InstallAction({
@@ -279,7 +279,7 @@ export function Updates() {
                 key: "update-check",
                 tone: "bad",
                 title: t("updates.checkFailed"),
-                body: <span>{result.error}</span>,
+                body: <span>{localizeMessage(result.error)}</span>,
               }
             : result.updateAvailable && result.latest
               ? {
@@ -328,7 +328,7 @@ export function Updates() {
           <span>{buildWarning}</span>
         </div>
       )}
-      <ErrorNotice message={d?.error ?? null} />
+      <ErrorNotice message={d?.error ? localizeMessage(d.error) : null} />
       {d && (
         <>
           <div className={s.kpiGrid}>
@@ -426,7 +426,7 @@ export function Updates() {
                   )
                 ) : (
                   <>
-                    <p className={s.storageLead}>{d.blockReason}</p>
+                    <p className={s.storageLead}>{localizeMessage(d.blockReason)}</p>
                     <Guidance deployment={d.deployment} />
                   </>
                 )}

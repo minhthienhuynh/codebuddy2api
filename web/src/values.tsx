@@ -1,5 +1,11 @@
 import { metric, type RecordValue } from "./api";
-import { t as translate, type MessageKey } from "./i18n";
+import {
+  t as translate,
+  formatDate,
+  currentLanguage,
+  localizeMessage,
+  type MessageKey,
+} from "./i18n";
 import s from "./ui.module.scss";
 
 const labels: Record<string, string> = {
@@ -160,6 +166,38 @@ const labels: Record<string, string> = {
   lock_timeout_ms: "锁等待上限",
   sql_deadline_ms: "SQL 执行上限",
   dropped: "省略条数",
+  enterprise: "企业账号",
+  enterpriseName: "企业名称",
+  enterprise_id: "企业 ID",
+  product: "产品类型",
+  restricted: "官方限制",
+  restricted_until: "限制截止",
+  auto_disabled: "自动禁用",
+  last_refresh_time: "最近刷新时间",
+  sessions: "会话列表",
+  sticky_sessions: "黏绑会话数",
+  sync: "同步状态",
+  sync_error: "同步错误",
+  usage_stats: "用量统计",
+  models: "可用模型",
+  growth_supported: "支持成长中心",
+  auto_growth: "自动成长任务",
+  growth_auto: "成长任务配置",
+  last_error_body: "最近错误详情",
+  generation: "代次",
+  auth_broken: "认证损坏",
+  catalog: "模型目录",
+  catalog_sync: "目录同步",
+  cooldown: "冷却状态",
+  label: "备注标签",
+  healthy: "健康状态",
+  in_flight: "进行中请求",
+  max_in_flight: "并发上限",
+  model_cooldowns: "模型冷却列表",
+  source: "来源",
+  date: "日期",
+  return_time: "返回时间",
+  day: "打卡日期",
 };
 const profiles: Record<string, string> = {
   "cn-cli": "大陆 · CodeBuddy",
@@ -249,9 +287,88 @@ const times = new Set([
 ]);
 const ownLabel = <V extends string>(map: Record<string, V>, key: string): V | undefined =>
   Object.hasOwn(map, key) ? map[key] : undefined;
+const profileKeys: Record<string, string> = {
+  "cn-cli": "values.profile.cnCli",
+  "cn-work": "values.profile.cnWork",
+  "intl-cli": "values.profile.intlCli",
+  "intl-work": "values.profile.intlWork",
+  cn: "values.profile.cn",
+  intl: "values.profile.intl",
+};
 export function profileLabel(value: string) {
+  const k = Object.hasOwn(profileKeys, value) ? profileKeys[value] : undefined;
+  if (k) {
+    const t = translate(k);
+    if (currentLanguage() === "en") {
+      if (!/[\u4e00-\u9fff]/.test(t)) return t;
+      return value.replaceAll("_", " ");
+    }
+    return t;
+  }
+  if (currentLanguage() === "en") return value.replaceAll("_", " ");
   return ownLabel(profiles, value) ?? value;
 }
+function statusLabel(val: string): string {
+  for (const prefix of ["values.status.", "values.scope.", "values.kind."]) {
+    const k = prefix + val;
+    const t = translate(k);
+    if (t !== k) {
+      if (currentLanguage() === "en" && /[\u4e00-\u9fff]/.test(t)) continue;
+      return t;
+    }
+  }
+  if (currentLanguage() === "en") return val.replaceAll("_", " ");
+  return ownLabel(statuses, val) ?? val;
+}
+function travelPhaseLabel(val: string): string {
+  const k = "values.phase." + val;
+  const t = translate(k);
+  if (t !== k) {
+    if (currentLanguage() === "en" && /[\u4e00-\u9fff]/.test(t)) {
+      return val.replaceAll("_", " ");
+    }
+    return t;
+  }
+  if (currentLanguage() === "en") return val.replaceAll("_", " ");
+  return ownLabel(travelPhases, val) ?? val;
+}
+function travelErrorLabel(val: string): string {
+  const k = "values.error." + val;
+  const t = translate(k);
+  if (t !== k) {
+    if (currentLanguage() === "en" && /[\u4e00-\u9fff]/.test(t)) {
+      return val.replaceAll("_", " ");
+    }
+    return t;
+  }
+  if (currentLanguage() === "en") return val.replaceAll("_", " ");
+  return ownLabel(travelErrors, val) ?? val;
+}
+function travelStateLabel(val: string): string {
+  const k = "values.status." + val;
+  const t = translate(k);
+  if (t !== k) {
+    if (currentLanguage() === "en" && /[\u4e00-\u9fff]/.test(t)) {
+      return val.replaceAll("_", " ");
+    }
+    return t;
+  }
+  if (currentLanguage() === "en") return val.replaceAll("_", " ");
+  return ownLabel(travelStates, val) ?? val;
+}
+function labelOf(key: string): string {
+  const k = "values." + key;
+  const t = translate(k);
+  if (t !== k) {
+    if (currentLanguage() === "en" && /[\u4e00-\u9fff]/.test(t)) {
+      return key.replaceAll("_", " ");
+    }
+    return t;
+  }
+  if (currentLanguage() === "en") return key.replaceAll("_", " ");
+  return ownLabel(labels, key) ?? key.replaceAll("_", " ");
+}
+
 const eventKinds: Record<string, MessageKey> = {
   runtime: "logs.kind.runtime",
   admin: "logs.kind.admin",
@@ -405,20 +522,34 @@ export function DataValue({
     const warning = ["partial", "degraded", "token_expired", "closed"].includes(name);
     return (
       <span className={`${s.badge} ${value ? (warning ? s.warn : s.good) : s.neutral}`}>
-        {name === "enabled" ? (value ? "已启用" : "已停用") : value ? "是" : "否"}
+        {name === "enabled"
+          ? value
+            ? translate("values.boolean.enabled")
+            : translate("values.boolean.disabled")
+          : value
+            ? translate("values.boolean.yes")
+            : translate("values.boolean.no")}
       </span>
     );
   }
   if (typeof value === "number") {
     if (!Number.isFinite(value)) return <span className={s.valueMuted}>—</span>;
     if (times.has(name)) {
-      if (value === 0) return <>未设置</>;
+      if (value === 0) return <>{translate("values.unset")}</>;
       const date = new Date(value > 1e11 ? value : value * 1000);
-      return <>{Number.isNaN(date.valueOf()) ? "时间无效" : date.toLocaleString("zh-CN")}</>;
+      return (
+        <>{Number.isNaN(date.valueOf()) ? translate("values.invalidDate") : formatDate(date)}</>
+      );
     }
     if (name.endsWith("_bytes")) return <>{bytes(value)}</>;
     if (name.endsWith("_ms")) return <>{metric(value)} ms</>;
-    return <>{new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 8 }).format(value)}</>;
+    return (
+      <>
+        {new Intl.NumberFormat(currentLanguage() === "en" ? "en-US" : "zh-CN", {
+          maximumFractionDigits: 8,
+        }).format(value)}
+      </>
+    );
   }
   if (typeof value === "string") {
     if (["request_preview", "response_preview", "diagnostic_preview"].includes(name)) {
@@ -432,38 +563,44 @@ export function DataValue({
       }
       return (
         <details className={s.rawData}>
-          <summary>查看原始诊断</summary>
+          <summary>{translate("values.rawDiagnostic")}</summary>
           <pre>{formatted}</pre>
         </details>
       );
     }
     const label = ["profile", "site", "region"].includes(name)
-      ? ownLabel(profiles, value)
+      ? profileLabel(value)
       : ["health", "status", "outcome", "kind", "budget_scope", "fault_counter_scope"].includes(
             name,
           )
-        ? ownLabel(statuses, value)
+        ? statusLabel(value)
         : name === "phase" || name === "stage"
-          ? ownLabel(travelPhases, value)
+          ? travelPhaseLabel(value)
           : name === "error_kind"
-            ? ownLabel(travelErrors, value)
+            ? travelErrorLabel(value)
             : name === "state"
-              ? ownLabel(travelStates, value)
+              ? travelStateLabel(value)
               : name === "consent_source"
-                ? ownLabel({ manual: "手动确认", environment: "环境变量预授权" }, value)
+                ? value === "manual"
+                  ? translate("values.consent.manual")
+                  : value === "environment"
+                    ? translate("values.consent.environment")
+                    : value
                 : undefined;
-    return <span className={s.valueText}>{label ?? (value || "—")}</span>;
+    const display = label ?? (currentLanguage() === "en" ? localizeMessage(value) : value);
+    return <span className={s.valueText}>{display || "—"}</span>;
   }
-  if (typeof value !== "object") return <span className={s.valueMuted}>未知</span>;
+  if (typeof value !== "object")
+    return <span className={s.valueMuted}>{translate("values.unknown")}</span>;
   if (depth >= 4)
     return (
       <details className={s.rawData}>
-        <summary>查看深层诊断</summary>
+        <summary>{translate("values.deepDiagnostic")}</summary>
         <pre>{JSON.stringify(value, null, 2)}</pre>
       </details>
     );
   if (Array.isArray(value)) {
-    if (!value.length) return <span className={s.valueMuted}>无</span>;
+    if (!value.length) return <span className={s.valueMuted}>{translate("values.empty")}</span>;
     const simple = value.every((item) => item === null || typeof item !== "object");
     return (
       <div className={simple ? s.valueChips : s.valueList}>
@@ -482,7 +619,7 @@ export function Fields({ data, depth = 0 }: { data: RecordValue; depth?: number 
     <dl className={`${s.details} ${depth ? s.nestedDetails : ""}`}>
       {Object.entries(data).map(([key, value]) => (
         <div key={key}>
-          <dt title={key}>{ownLabel(labels, key) ?? key.replaceAll("_", " ")}</dt>
+          <dt title={key}>{labelOf(key)}</dt>
           <dd>
             <DataValue value={value} name={key} depth={depth} />
           </dd>

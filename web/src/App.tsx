@@ -80,6 +80,18 @@ function Shell() {
       /* Session-only preference when storage is unavailable. */
     }
   };
+  const currentNav = navigation.find(
+    ([path]) =>
+      path &&
+      (location.pathname === `/dashboard${path}` ||
+        location.pathname.startsWith(`/dashboard${path}/`)),
+  );
+  const pageLabel = t(currentNav?.[1] ?? "nav.overview");
+
+  useEffect(() => {
+    document.title = `${pageLabel} · CodeBuddy`;
+  }, [pageLabel]);
+
   return (
     <div className={`${s.app} ${collapsed ? s.collapsed : ""}`}>
       <a href="#main" className={s.skip}>
@@ -205,6 +217,11 @@ function Login() {
   const [busy, setBusy] = useState(false);
   const [shake, setShake] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    document.title = `${t("login.pageTitle")} · CodeBuddy`;
+  }, [t]);
+
   if (status === "authenticated") return <Navigate to="/dashboard" replace />;
   return (
     <div className={s.login}>
