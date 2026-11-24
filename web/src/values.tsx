@@ -166,6 +166,38 @@ const labels: Record<string, string> = {
   lock_timeout_ms: "锁等待上限",
   sql_deadline_ms: "SQL 执行上限",
   dropped: "省略条数",
+  enterprise: "企业账号",
+  enterpriseName: "企业名称",
+  enterprise_id: "企业 ID",
+  product: "产品类型",
+  restricted: "官方限制",
+  restricted_until: "限制截止",
+  auto_disabled: "自动禁用",
+  last_refresh_time: "最近刷新时间",
+  sessions: "会话列表",
+  sticky_sessions: "黏绑会话数",
+  sync: "同步状态",
+  sync_error: "同步错误",
+  usage_stats: "用量统计",
+  models: "可用模型",
+  growth_supported: "支持成长中心",
+  auto_growth: "自动成长任务",
+  growth_auto: "成长任务配置",
+  last_error_body: "最近错误详情",
+  generation: "代次",
+  auth_broken: "认证损坏",
+  catalog: "模型目录",
+  catalog_sync: "目录同步",
+  cooldown: "冷却状态",
+  label: "备注标签",
+  healthy: "健康状态",
+  in_flight: "进行中请求",
+  max_in_flight: "并发上限",
+  model_cooldowns: "模型冷却列表",
+  source: "来源",
+  date: "日期",
+  return_time: "返回时间",
+  day: "打卡日期",
 };
 const profiles: Record<string, string> = {
   "cn-cli": "大陆 · CodeBuddy",
@@ -265,48 +297,74 @@ const profileKeys: Record<string, string> = {
 };
 export function profileLabel(value: string) {
   const k = Object.hasOwn(profileKeys, value) ? profileKeys[value] : undefined;
-  if (k) return translate(k);
+  if (k) {
+    const t = translate(k);
+    if (currentLanguage() === "en") {
+      if (!/[\u4e00-\u9fff]/.test(t)) return t;
+      return value.replaceAll("_", " ");
+    }
+    return t;
+  }
   if (currentLanguage() === "en") return value.replaceAll("_", " ");
   return ownLabel(profiles, value) ?? value;
 }
 function statusLabel(val: string): string {
-  const k = "values.status." + val;
-  const t = translate(k);
-  if (t !== k) return t;
-  const k2 = "values.scope." + val;
-  const t2 = translate(k2);
-  if (t2 !== k2) return t2;
-  const k3 = "values.kind." + val;
-  const t3 = translate(k3);
-  if (t3 !== k3) return t3;
+  for (const prefix of ["values.status.", "values.scope.", "values.kind."]) {
+    const k = prefix + val;
+    const t = translate(k);
+    if (t !== k) {
+      if (currentLanguage() === "en" && /[\u4e00-\u9fff]/.test(t)) continue;
+      return t;
+    }
+  }
   if (currentLanguage() === "en") return val.replaceAll("_", " ");
   return ownLabel(statuses, val) ?? val;
 }
 function travelPhaseLabel(val: string): string {
   const k = "values.phase." + val;
   const t = translate(k);
-  if (t !== k) return t;
+  if (t !== k) {
+    if (currentLanguage() === "en" && /[\u4e00-\u9fff]/.test(t)) {
+      return val.replaceAll("_", " ");
+    }
+    return t;
+  }
   if (currentLanguage() === "en") return val.replaceAll("_", " ");
   return ownLabel(travelPhases, val) ?? val;
 }
 function travelErrorLabel(val: string): string {
   const k = "values.error." + val;
   const t = translate(k);
-  if (t !== k) return t;
+  if (t !== k) {
+    if (currentLanguage() === "en" && /[\u4e00-\u9fff]/.test(t)) {
+      return val.replaceAll("_", " ");
+    }
+    return t;
+  }
   if (currentLanguage() === "en") return val.replaceAll("_", " ");
   return ownLabel(travelErrors, val) ?? val;
 }
 function travelStateLabel(val: string): string {
   const k = "values.status." + val;
   const t = translate(k);
-  if (t !== k) return t;
+  if (t !== k) {
+    if (currentLanguage() === "en" && /[\u4e00-\u9fff]/.test(t)) {
+      return val.replaceAll("_", " ");
+    }
+    return t;
+  }
   if (currentLanguage() === "en") return val.replaceAll("_", " ");
   return ownLabel(travelStates, val) ?? val;
 }
 function labelOf(key: string): string {
   const k = "values." + key;
   const t = translate(k);
-  if (t !== k) return t;
+  if (t !== k) {
+    if (currentLanguage() === "en" && /[\u4e00-\u9fff]/.test(t)) {
+      return key.replaceAll("_", " ");
+    }
+    return t;
+  }
   if (currentLanguage() === "en") return key.replaceAll("_", " ");
   return ownLabel(labels, key) ?? key.replaceAll("_", " ");
 }
