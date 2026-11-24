@@ -3899,6 +3899,30 @@ const backendMessageMap: Record<string, string> = {
   凭证不存在: "Credential does not exist",
   向量与重排序模型不支持聊天倍率探测:
     "Embedding and rerank models do not support chat rate probing",
+
+  // Credential Actions & Refresh
+  凭证已刷新: "Credential refreshed",
+  "操作失败（": "Operation failed (",
+  "），保留已有数据；请检查账号状态后重试":
+    "), retaining existing data; please check account status and retry",
+  "操作失败，保留已有数据；请检查账号状态后重试":
+    "Operation failed, retaining existing data; please check account status and retry",
+  "刷新 token 失败：": "Token refresh failed: ",
+  "刷新 token 失败": "Token refresh failed",
+  "刷新 token 网络失败：": "Token refresh network failed: ",
+  "刷新 token 网络失败": "Token refresh network failed",
+  "刷新接口未返回有效的 accessToken": "Refresh endpoint did not return a valid accessToken",
+  "刷新令牌缺少账号身份（sub）": "Refresh token missing account identity (sub)",
+  "刷新或保存失败，请检查网络与存储状态":
+    "Refresh or save failed; check network and storage status",
+  官方拒绝了刷新请求: "Official rejected the refresh request",
+  网络或服务异常: "Network or service exception",
+  至少需要一个刷新令牌: "At least one refresh token is required",
+  "凭证维护正在执行，请稍后刷新列表核验":
+    "Credential maintenance is running, please refresh the list later to verify",
+  凭证维护尚未就绪: "Credential maintenance is not yet ready",
+  凭证不存在或身份已变化: "Credential does not exist or identity has changed",
+  凭证操作不存在: "Credential action does not exist",
 };
 
 const sortedMessageEntries = Object.entries(backendMessageMap).sort(

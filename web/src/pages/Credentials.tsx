@@ -371,7 +371,7 @@ function ImportDrawer({ onClose, onDone }: { onClose: () => void; onDone: () => 
               : translate("credentials.import.notImported")}
           </Badge>
           <strong>{r.name}</strong>
-          {r.error && <p>{r.error}</p>}
+          {r.error && <p>{localizeMessage(r.error)}</p>}
         </div>
       ))}
     </Drawer>
