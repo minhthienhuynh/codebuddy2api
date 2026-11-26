@@ -253,4 +253,192 @@ describe("Credentials details modal i18n", () => {
     const chinese = text.match(/[\u4e00-\u9fff]/g) ?? [];
     expect(chinese).toEqual([]);
   });
+
+  it("contains zero Chinese in Raw Diagnostics for real-world uninitialized and error credentials in English mode", async () => {
+    const rawFjordCred = {
+      healthy: true,
+      in_flight: 0,
+      max_in_flight: 0,
+      model_cooldowns: {},
+      sticky_sessions: 0,
+      uid: "300001",
+      account_key: "9ca6df8fdfd73cca38a0bebc3e67e26f59039704ce38c2c5b0534d378f96d4ee",
+      site: "domestic",
+      profile: "cn-cli",
+      region: "cn",
+      product: "cli",
+      nickname: "Fjord",
+      enterpriseName: "Fjord Studio",
+      enterprise: true,
+      token_expires_at: 1795545822290,
+      token_expired: false,
+      last_refresh_time: 0,
+      id: "cred-real-1",
+      name: "fjord.info",
+      enabled: true,
+      health: "ready",
+      auto_disabled: false,
+      restricted: false,
+      restricted_until: null,
+      auto_checkin: true,
+      checkin: {
+        state: "unknown",
+        message: "尚未查询签到活动",
+      },
+      auto_travel: false,
+      travel_supported: false,
+      travel: {
+        state: "unknown",
+        message: "尚未查询旅行状态",
+      },
+      trial_supported: false,
+      trial: {
+        ok: false,
+        can_claim: false,
+        state: "not_applicable",
+        message: "仅支持国际 WorkBuddy 账号，国内账号及国际 CodeBuddy 不适用",
+      },
+      daily_chat_supported: false,
+      auto_daily_chat: false,
+      daily_chat: {
+        state: "available",
+        message: "今日尚未打卡，可手动向官方申请每日活跃奖励",
+        day: null,
+      },
+      growth_supported: false,
+      auto_growth: false,
+      growth_auto: {},
+      fail_until: 0,
+      cooldown_until: 0,
+      cooldown_remaining: 0,
+      last_error_code: "http_401",
+      last_failure_at: 1700000000,
+      last_error_body: "上游限制",
+      sync_error: "连接官方失败或响应中断，请检查服务器网络、DNS 和代理；勿立即重复申请",
+      cooldowns: [],
+      credits: null,
+      sync_pending: true,
+      catalog_ready: false,
+      bindings: [],
+    };
+
+    vi.mocked(useResource).mockReturnValue({
+      data: [rawFjordCred],
+      reload: vi.fn(),
+      loading: false,
+      refreshing: false,
+      error: null,
+    });
+
+    render(
+      <LanguageProvider>
+        <Credentials />
+      </LanguageProvider>,
+    );
+
+    const detailsBtn = screen.getByRole("button", { name: /Details|详情/i });
+    await act(async () => {
+      fireEvent.click(detailsBtn);
+    });
+
+    const dialog = screen.getByRole("dialog");
+    const rawTab = within(dialog).getByRole("tab", { name: "Raw Diagnostics" });
+    await act(async () => {
+      fireEvent.click(rawTab);
+    });
+
+    const text = dialog.textContent ?? "";
+    const chinese = text.match(/[\u4e00-\u9fff]/g) ?? [];
+    expect(chinese).toEqual([]);
+  });
+
+  it("contains zero Chinese characters when refreshing credential in English mode", async () => {
+    vi.spyOn(api, "post").mockImplementation(async (path: string) => {
+      if (path.includes("/refresh")) {
+        return {
+          data: {
+            ok: true,
+            results: [
+              {
+                id: "cred-1",
+                name: "test-account.info",
+                action: "refresh",
+                ok: true,
+                message: "凭证已刷新",
+              },
+            ],
+          },
+        };
+      }
+      return { data: {} };
+    });
+
+    render(
+      <LanguageProvider>
+        <Credentials />
+      </LanguageProvider>,
+    );
+
+    const detailsBtn = screen.getByRole("button", { name: /Details|详情/i });
+    await act(async () => {
+      fireEvent.click(detailsBtn);
+    });
+
+    const dialog = screen.getByRole("dialog");
+    const refreshBtn = within(dialog).getByRole("button", {
+      name: /Refresh Credential|Refresh Token|刷新凭证/i,
+    });
+    await act(async () => {
+      fireEvent.click(refreshBtn);
+    });
+
+    const text = document.body.textContent ?? "";
+    const chinese = text.match(/[\u4e00-\u9fff]/g) ?? [];
+    expect(chinese).toEqual([]);
+  });
+
+  it("contains zero Chinese characters when credential refresh fails in English mode", async () => {
+    vi.spyOn(api, "post").mockImplementation(async (path: string) => {
+      if (path.includes("/refresh")) {
+        return {
+          data: {
+            ok: false,
+            results: [
+              {
+                id: "cred-1",
+                name: "test-account.info",
+                action: "refresh",
+                ok: false,
+                message: "操作失败（TokenRefreshRejected），保留已有数据；请检查账号状态后重试",
+              },
+            ],
+          },
+        };
+      }
+      return { data: {} };
+    });
+
+    render(
+      <LanguageProvider>
+        <Credentials />
+      </LanguageProvider>,
+    );
+
+    const detailsBtn = screen.getByRole("button", { name: /Details|详情/i });
+    await act(async () => {
+      fireEvent.click(detailsBtn);
+    });
+
+    const dialog = screen.getByRole("dialog");
+    const refreshBtn = within(dialog).getByRole("button", {
+      name: /Refresh Credential|Refresh Token|刷新凭证/i,
+    });
+    await act(async () => {
+      fireEvent.click(refreshBtn);
+    });
+
+    const text = document.body.textContent ?? "";
+    const chinese = text.match(/[\u4e00-\u9fff]/g) ?? [];
+    expect(chinese).toEqual([]);
+  });
 });

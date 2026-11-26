@@ -137,6 +137,31 @@ describe("localizeMessage", () => {
     expect(localizeMessage("签到成功，余额可另行同步")).toBe(
       "Check-in succeeded; balance can be synced separately",
     );
+    expect(localizeMessage("签到活动未开放或已结束")).toBe(
+      "Check-in activity not available or has ended",
+    );
+    expect(localizeMessage("当前账号不具备签到资格")).toBe(
+      "Current account is not eligible for check-in",
+    );
+    expect(localizeMessage("活动状态未确认，未尝试领取")).toBe(
+      "Activity status unconfirmed; claim not attempted",
+    );
+    expect(localizeMessage("签到未确认成功，请核验账号状态")).toBe(
+      "Check-in not confirmed; please verify account status",
+    );
+    expect(localizeMessage("自动签到设置或凭证已变化，已取消未发送的领取")).toBe(
+      "Auto check-in settings or credential changed; unsent claim cancelled",
+    );
+    expect(localizeMessage("凭证已变化，结果未写入，请刷新核验")).toBe(
+      "Credential changed; result not saved, please refresh and verify",
+    );
+    expect(localizeMessage("尚未查询签到活动")).toBe("Check-in activity not yet queried");
+    expect(localizeMessage("账号已人工停用")).toBe("Account manually disabled");
+    expect(localizeMessage("已清除该账号的冷却")).toBe("Cooldown cleared for this account");
+    expect(localizeMessage("该账号当前没有冷却")).toBe("No active cooldown for this account");
+    expect(localizeMessage("凭证身份已变化，请刷新列表")).toBe(
+      "Credential identity changed, please refresh the list",
+    );
     expect(localizeMessage("Buddy 已派出，余额可另行同步")).toBe(
       "Buddy dispatched; balance can be synced separately",
     );
