@@ -3692,6 +3692,16 @@ const backendMessageMap: Record<string, string> = {
   "企业账号缺少企业 ID，无法查询企业配额（已跳过个人版接口以避免误报余额）":
     "Enterprise account missing enterprise ID; cannot query quota (skipped personal endpoint to prevent misreporting)",
   积分响应与凭据站点不一致: "Credit response site mismatch with credential site",
+  企业账号不能请求个人模型表: "Enterprise accounts cannot request the personal model table",
+  登录身份过期: "Login session expired",
+  个人模型表接口网络错误: "Personal model table API network error",
+  个人模型表接口返回无法解析: "Personal model table API returned an unparseable response",
+  个人模型表接口格式错误: "Personal model table API format error",
+  个人模型表接口返回非成功状态: "Personal model table API returned a non-success status",
+  个人模型表接口: "Personal model table API",
+  模型配置接口格式错误: "Model configuration API format error",
+  模型配置接口返回非成功状态: "Model configuration API returned a non-success status",
+  模型配置接口: "Model configuration API",
 
   // Travel Locations
   杭州西湖: "Hangzhou West Lake",
